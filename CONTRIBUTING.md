@@ -307,3 +307,25 @@ Before submitting, verify every item:
 ---
 
 *The constraint is the product. The comments are the curriculum. Thank you for helping build it.*
+
+---
+
+## Translating Scripts
+
+We welcome translations of script comments into other languages. The code stays in English — only comments, docstrings, and inline documentation are translated.
+
+### How to Translate
+
+1. Pick a script and a target language from the [translation status table](TRANSLATIONS.md).
+2. Copy the script to `translations/<locale>/` (e.g., `translations/es/microgpt.py`).
+3. Translate all comments, docstrings, section headers, and print statements.
+4. Do NOT translate variable names, function names, or code.
+5. Preserve all 7 comment types from the commenting standard.
+6. Test that the translated script still runs: `python translations/es/microgpt.py`
+
+### Translation Quality Bar
+
+- Technical accuracy over literary polish — an incorrect translation is worse than an awkward one.
+- Preserve math notation as-is (equations are universal).
+- Use domain-standard terminology for the target language (e.g., the accepted ML term in that language's community).
+- When in doubt, keep the English term with a parenthetical translation.
