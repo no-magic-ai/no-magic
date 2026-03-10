@@ -276,6 +276,102 @@ microssm.py           → How Mamba models bypass attention entirely
 
 Each tier's README has the full algorithm list with measured run times for that category.
 
+## Dependency Graph
+
+How the algorithms connect conceptually. Arrows mean "understanding A helps with B" — not code imports (every script is fully self-contained).
+
+```mermaid
+graph LR
+  %% --- Style definitions ---
+  classDef foundations fill:#4a90d9,stroke:#2c5f8a,color:#fff
+  classDef alignment fill:#e8834a,stroke:#b35f2e,color:#fff
+  classDef systems fill:#5bb55b,stroke:#3a823a,color:#fff
+
+  %% === 01-FOUNDATIONS ===
+  subgraph F["01 — Foundations"]
+    TOK["Tokenizer"]
+    EMB["Embedding"]
+    OPT["Optimizer"]
+    RNN["RNN / GRU"]
+    CONV["Conv Net"]
+    GPT["GPT"]
+    BERT["BERT"]
+    RAG["RAG"]
+    DIFF["Diffusion"]
+    VAE["VAE"]
+    GAN["GAN"]
+  end
+
+  %% === 02-ALIGNMENT ===
+  subgraph A["02 — Alignment"]
+    BN["BatchNorm"]
+    DROP["Dropout"]
+    LORA["LoRA"]
+    QLORA["QLoRA"]
+    DPO["DPO"]
+    REINF["REINFORCE"]
+    PPO["PPO"]
+    GRPO["GRPO"]
+    MOE["MoE"]
+  end
+
+  %% === 03-SYSTEMS ===
+  subgraph S["03 — Systems"]
+    ATTN["Attention"]
+    FLASH["Flash Attn"]
+    ROPE["RoPE"]
+    KV["KV-Cache"]
+    PAGED["PagedAttn"]
+    QUANT["Quantization"]
+    BEAM["Beam Search"]
+    CKPT["Checkpointing"]
+    PAR["Parallelism"]
+    SSM["SSM / Mamba"]
+  end
+
+  %% --- Foundation internals ---
+  TOK --> GPT
+  EMB --> RAG
+  RNN --> GPT
+  OPT --> GPT
+  GPT --> BERT
+  DIFF -.-> VAE
+  DIFF -.-> GAN
+
+  %% --- Foundations → Alignment ---
+  GPT --> LORA
+  GPT --> DPO
+  GPT --> PPO
+  GPT --> MOE
+  GPT --> GRPO
+  LORA --> QLORA
+  REINF --> PPO
+  REINF --> GRPO
+  OPT --> BN
+  OPT --> DROP
+
+  %% --- Foundations → Systems ---
+  GPT --> ATTN
+  GPT --> KV
+  GPT --> QUANT
+  GPT --> BEAM
+  GPT --> SSM
+  RNN --> SSM
+  ATTN --> FLASH
+  ATTN --> ROPE
+  KV --> PAGED
+
+  %% --- Cross-tier into QLoRA ---
+  QUANT --> QLORA
+
+  %% --- Apply styles ---
+  class TOK,EMB,OPT,RNN,CONV,GPT,BERT,RAG,DIFF,VAE,GAN foundations
+  class BN,DROP,LORA,QLORA,DPO,REINF,PPO,GRPO,MOE alignment
+  class ATTN,FLASH,ROPE,KV,PAGED,QUANT,BEAM,CKPT,PAR,SSM systems
+```
+
+**Legend:** <span style="color:#4a90d9">Foundations</span> · <span style="color:#e8834a">Alignment</span> · <span style="color:#5bb55b">Systems</span> — Solid arrows = strong prerequisite, dashed arrows = conceptual comparison.
+
 ## Inspiration & Attribution
 
 This project is directly inspired by [Andrej Karpathy's](https://github.com/karpathy) extraordinary work on minimal implementations — particularly [micrograd](https://github.com/karpathy/micrograd), [makemore](https://github.com/karpathy/makemore), and the `microgpt.py` script that demonstrated the entire GPT algorithm in a single dependency-free Python file.
