@@ -9,10 +9,10 @@ Each challenge presents a code snippet or scenario drawn directly from one of th
 | File | Script | Topics |
 |------|--------|--------|
 | [attention.md](attention.md) | `03-systems/microattention.py` | Scaling factor, identical keys, causal masking, sliding window |
-| [microgpt.md](microgpt.md) | `01-foundations/microgpt.py` | Context window, head dimensions, learning rate, KV cache |
-| [microgan.md](microgan.md) | `01-foundations/microgan.py` | Gradient saturation, mode collapse, training balance |
-| [microdpo.md](microdpo.md) | `02-alignment/microdpo.py` | Beta parameter, identical completions, reference divergence |
-| [microoptimizer.md](microoptimizer.md) | `01-foundations/microoptimizer.py` | Adam degeneracy, bias correction, constant gradients |
+| [gpt.md](gpt.md) | `01-foundations/microgpt.py` | Context window, head dimensions, learning rate, KV cache |
+| [gan.md](gan.md) | `01-foundations/microgan.py` | Gradient saturation, mode collapse, training balance |
+| [dpo.md](dpo.md) | `02-alignment/microdpo.py` | Beta parameter, identical completions, reference divergence |
+| [optimizer.md](optimizer.md) | `01-foundations/microoptimizer.py` | Adam degeneracy, bias correction, constant gradients |
 
 ## How to Use
 
