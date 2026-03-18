@@ -6,13 +6,16 @@ Each challenge presents a code snippet or scenario drawn directly from one of th
 
 ## Available Challenges
 
-| File | Script | Topics |
-|------|--------|--------|
-| [attention.md](attention.md) | `03-systems/microattention.py` | Scaling factor, identical keys, causal masking, sliding window |
-| [gpt.md](gpt.md) | `01-foundations/microgpt.py` | Context window, head dimensions, learning rate, KV cache |
-| [gan.md](gan.md) | `01-foundations/microgan.py` | Gradient saturation, mode collapse, training balance |
-| [dpo.md](dpo.md) | `02-alignment/microdpo.py` | Beta parameter, identical completions, reference divergence |
-| [optimizer.md](optimizer.md) | `01-foundations/microoptimizer.py` | Adam degeneracy, bias correction, constant gradients |
+| File                           | Script                             | Topics                                                                     |
+| ------------------------------ | ---------------------------------- | -------------------------------------------------------------------------- |
+| [attention.md](attention.md)   | `03-systems/microattention.py`     | Scaling factor, identical keys, causal masking, sliding window             |
+| [gpt.md](gpt.md)               | `01-foundations/microgpt.py`       | Context window, head dimensions, learning rate, KV cache                   |
+| [gan.md](gan.md)               | `01-foundations/microgan.py`       | Gradient saturation, mode collapse, training balance                       |
+| [dpo.md](dpo.md)               | `02-alignment/microdpo.py`         | Beta parameter, identical completions, reference divergence                |
+| [optimizer.md](optimizer.md)   | `01-foundations/microoptimizer.py` | Adam degeneracy, bias correction, constant gradients                       |
+| [discretize.md](discretize.md) | `03-systems/microdiscretize.py`    | Euler stability, trapezoidal alpha, ZOH unconditional stability            |
+| [complexssm.md](complexssm.md) | `03-systems/microcomplexssm.py`    | Real-only parity failure, complex rotation matrix, data-dependent rotation |
+| [roofline.md](roofline.md)     | `03-systems/microroofline.py`      | Arithmetic intensity, MIMO rank utilization, FLOPs vs wall-clock time      |
 
 ## How to Use
 

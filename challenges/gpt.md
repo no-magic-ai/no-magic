@@ -52,6 +52,7 @@ Test your understanding of autoregressive language modeling by predicting what h
 <summary>Reveal Answer</summary>
 
 **Answer:**
+
 - `LEARNING_RATE = 0.0`: All parameter updates are zero. The model generates purely from its random initialization, producing gibberish character sequences. The loss remains at approximately `-log(1/VOCAB_SIZE)` (uniform prediction).
 - `LEARNING_RATE = 10.0`: Parameters overshoot wildly on every step. Logits explode to extreme values, softmax saturates, and the loss oscillates or grows. The model generates repetitive or degenerate sequences.
 

@@ -7,6 +7,7 @@ Test your understanding of optimization algorithms by predicting what happens in
 ### Challenge 1: Adam with Beta1=0 and Beta2=0
 
 **Setup:** The `step_adam` function (line 365) computes:
+
 - `m = beta1 * m + (1 - beta1) * grad` (first moment, line 402)
 - `v = beta2 * v + (1 - beta2) * grad^2` (second moment, line 404)
 - `m_hat = m / (1 - beta1^t)` (bias correction, line 407)
@@ -31,6 +32,7 @@ Test your understanding of optimization algorithms by predicting what happens in
 ### Challenge 2: Why Bias Correction Matters Early
 
 **Setup:** At step `t=1` with `ADAM_BETA1 = 0.9` and `ADAM_BETA2 = 0.999`, bias correction divides by `(1 - beta^t)`:
+
 - `m_hat = m / (1 - 0.9^1) = m / 0.1 = 10 * m`
 - `v_hat = v / (1 - 0.999^1) = v / 0.001 = 1000 * v`
 
@@ -59,6 +61,7 @@ Test your understanding of optimization algorithms by predicting what happens in
 <summary>Reveal Answer</summary>
 
 **Answer:**
+
 - **SGD:** Update = `lr * g = 0.05 * 0.5 = 0.025` per step. Constant from step 1.
 - **Momentum:** Velocity converges to `g / (1 - beta) = 0.5 / 0.1 = 5.0`. Update = `lr * 5.0 = 0.25` per step. 10x larger than SGD. Converges in ~10 steps (`1/(1-0.9)`).
 - **RMSProp:** `sq_avg` converges to `g^2 = 0.25`. Update = `lr * g / sqrt(g^2 + eps) = 0.01 * 0.5 / 0.5 = 0.01` per step. Converges in ~100 steps (`1/(1-0.99)`).
@@ -101,6 +104,7 @@ Test your understanding of optimization algorithms by predicting what happens in
 <summary>Reveal Answer</summary>
 
 **Answer:**
+
 - **RMSProp:** `sq_avg` converges to `1.0`. Each step: `lr * grad / sqrt(1.0 + eps) ~ lr * grad = +/- 0.01`. The parameter oscillates by `+/-0.01` with zero net progress.
 - **Adam:** `m` converges to approximately 0 (positive and negative gradients cancel). `v` converges to `1.0`. Update: `lr * ~0 / sqrt(1.0 + eps) ~ 0`. Adam effectively stops updating this parameter.
 

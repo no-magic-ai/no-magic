@@ -71,6 +71,7 @@ Test your understanding of generative adversarial networks by predicting what ha
 <summary>Reveal Answer</summary>
 
 **Answer:**
+
 - **ReLU:** The generator can only produce points with non-negative coordinates (first quadrant). Half the spiral lives in negative-coordinate regions, so the generator can never match the full distribution. The discriminator would trivially reject any point with a negative coordinate.
 - **No activation:** Early in training, random weights produce arbitrary-magnitude outputs. Points far from `[-1, 1]` are trivially distinguishable from real data (which is bounded), so the discriminator wins easily and the generator gets no useful gradient signal. Even if training stabilizes, unbounded outputs make the loss landscape harder to navigate.
 
