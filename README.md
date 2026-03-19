@@ -4,7 +4,7 @@
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)
 ![License: MIT](https://img.shields.io/github/license/Mathews-Tom/no-magic?style=flat-square)
-![Algorithms](https://img.shields.io/badge/algorithms-44-orange?style=flat-square)
+![Algorithms](https://img.shields.io/badge/algorithms-47-orange?style=flat-square)
 ![Version](https://img.shields.io/badge/version-v2.0.0-blue?style=flat-square)
 ![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen?style=flat-square)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)
@@ -204,7 +204,7 @@ Every script in this repository is an **executable proof** that these algorithms
 </details>
 
 <details>
-<summary><h3>04 — Agents & Planning (2 scripts)</h3></summary>
+<summary><h3>04 — Agents & Planning (5 scripts)</h3></summary>
 <table>
 <tr>
 <td align="center"><a href="04-agents/micromcts.py"><b>Monte Carlo Tree Search</b></a><br/>
@@ -213,6 +213,14 @@ Every script in this repository is an **executable proof** that these algorithms
 <td align="center"><a href="04-agents/microreact.py"><b>ReAct Agent</b></a><br/>
 <img src="videos/previews/microreact.gif" width="280"/><br/>
 <sub>Thought → Action → Observation</sub></td>
+<td align="center"><a href="04-agents/microbandit.py"><b>Multi-Armed Bandits</b></a><br/>
+<sub>ε-greedy vs UCB1 vs Thompson Sampling</sub></td>
+</tr>
+<tr>
+<td align="center"><a href="04-agents/microminimax.py"><b>Minimax + Alpha-Beta</b></a><br/>
+<sub>Adversarial search with pruning</sub></td>
+<td align="center"><a href="04-agents/micromemory.py"><b>Memory-Augmented Network</b></a><br/>
+<sub>Differentiable read/write heads</sub></td>
 <td></td>
 </tr>
 </table>
@@ -314,9 +322,9 @@ The engineering that makes models fast, small, and deployable. Attention variant
 
 See [`03-systems/README.md`](03-systems/README.md) for the full algorithm list, timing data, and roadmap.
 
-### 04 — Agents & Planning (2 scripts)
+### 04 — Agents & Planning (5 scripts)
 
-Autonomous reasoning and decision-making. Monte Carlo Tree Search for strategic planning and ReAct agents for tool-augmented reasoning loops.
+Autonomous reasoning and decision-making. Monte Carlo Tree Search for strategic planning, ReAct agents for tool-augmented reasoning loops, multi-armed bandits for exploration/exploitation, minimax with alpha-beta pruning for adversarial search, and memory-augmented networks for persistent agent memory.
 
 See [`04-agents/README.md`](04-agents/README.md) for the full algorithm list, timing data, and roadmap.
 
@@ -372,13 +380,13 @@ Each tier's README has the full algorithm list with measured run times for that 
 
 ### Challenges
 
-"Predict the behavior" exercises that test your understanding of the algorithms. 8 challenges covering attention, GPT, GAN, DPO, optimizer edge cases, discretization, complex SSMs, and roofline analysis. Each challenge presents a code snippet and asks you to reason about the output before running it.
+"Predict the behavior" exercises that test your understanding of the algorithms. 20 challenges covering all 4 tiers — attention, GPT, GAN, DPO, optimizers, discretization, complex SSMs, roofline, tokenizer, embedding, RNN, VAE, LoRA, PPO, MoE, KV-cache, quantization, SSM, MCTS, and ReAct. Each challenge presents a code snippet and asks you to reason about the output before running it.
 
 See [`challenges/README.md`](challenges/README.md) for the full challenge set.
 
 ### Flashcards
 
-Anki-compatible flashcard decks for spaced repetition review. 162 cards across 3 tiers (foundations, alignment, systems), covering key concepts, equations, and design decisions from every script.
+Anki-compatible flashcard decks for spaced repetition review. 182 cards across 4 tiers (foundations, alignment, systems, agents), covering key concepts, equations, and design decisions from every script.
 
 ```bash
 # Generate the Anki deck
@@ -389,13 +397,13 @@ See [`resources/flashcards/`](resources/flashcards/) for the raw card data and g
 
 ### Learning Path
 
-Structured tracks for different goals — 6 learning tracks ranging from weekend sprints to a full 20-hour curriculum. Each track orders scripts by conceptual dependency and includes time estimates, prerequisites, and milestone markers.
+Structured tracks for different goals — 7 learning tracks ranging from weekend sprints to a full curriculum. Each track orders scripts by conceptual dependency and includes time estimates, prerequisites, and milestone markers.
 
 See [`LEARNING_PATH.md`](LEARNING_PATH.md) for the full guide.
 
 ### Offline Book (EPUB)
 
-All 44 scripts compiled into a single EPUB with table of contents, thesis excerpts, tradeoff sections, and full annotated source. Readable on any e-reader, tablet, or phone.
+All 47 scripts compiled into a single EPUB with table of contents, thesis excerpts, tradeoff sections, and full annotated source. Readable on any e-reader, tablet, or phone.
 
 ```bash
 # Requires pandoc: brew install pandoc (macOS) or apt install pandoc
