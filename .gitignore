@@ -1,3 +1,6 @@
+# macOS
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -213,12 +216,8 @@ __marimo__/
 .opencode/
 .serena/
 
-# Developer workspace (Sage-Dev generated files)
+# Developer workspace
 .docs/
-.sage/
-
-# macOS
-.DS_Store
 
 # Cached datasets (auto-downloaded by scripts on first run)
 names.txt
