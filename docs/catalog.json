@@ -4,335 +4,383 @@
     "name": "attention_vs_none",
     "display": "Attention vs None",
     "thesis": "Attention is not just helpful -- it is the mechanism that lets a model look back across an",
-    "lines": 511
+    "lines": 511,
+    "paper_slug": "transformer"
   },
   {
     "tier": "01-foundations",
     "name": "microbert",
     "display": "BERT",
     "thesis": "The other half of the transformer — how BERT learns bidirectional representations by predicting",
-    "lines": 501
+    "lines": 501,
+    "paper_slug": "bert"
   },
   {
     "tier": "01-foundations",
     "name": "microconv",
     "display": "CNN",
     "thesis": "How a sliding kernel extracts spatial features — the convolution operation, pooling, and feature",
-    "lines": 549
+    "lines": 549,
+    "paper_slug": "lenet-5"
   },
   {
     "tier": "01-foundations",
     "name": "microdiffusion",
     "display": "Denoising Diffusion",
     "thesis": "How images emerge from noise -- the denoising diffusion algorithm behind Stable Diffusion,",
-    "lines": 461
+    "lines": 461,
+    "paper_slug": "ddpm"
   },
   {
     "tier": "01-foundations",
     "name": "microembedding",
     "display": "Word Embeddings",
     "thesis": "How meaning becomes geometry — training vectors where distance equals similarity,",
-    "lines": 377
+    "lines": 377,
+    "paper_slug": "word2vec"
   },
   {
     "tier": "01-foundations",
     "name": "microgan",
     "display": "GAN",
     "thesis": "Two networks at war -- how a generator learns to fool a discriminator, and why the",
-    "lines": 534
+    "lines": 534,
+    "paper_slug": "gan"
   },
   {
     "tier": "01-foundations",
     "name": "microgpt",
     "display": "Autoregressive GPT",
     "thesis": "The autoregressive language model from first principles: GPT learns to predict the next",
-    "lines": 513
+    "lines": 513,
+    "paper_slug": "gpt-1"
   },
   {
     "tier": "01-foundations",
     "name": "microlstm",
     "display": "LSTM",
     "thesis": "Long Short-Term Memory from first principles: the 4-gate architecture that solved the",
-    "lines": 530
+    "lines": 530,
+    "paper_slug": "lstm"
   },
   {
     "tier": "01-foundations",
     "name": "microoptimizer",
     "display": "Optimizer Comparison",
     "thesis": "Why Adam converges when SGD stalls — momentum, adaptive learning rates, and the geometry of",
-    "lines": 585
+    "lines": 585,
+    "paper_slug": "adam"
   },
   {
     "tier": "01-foundations",
     "name": "microrag",
     "display": "RAG Pipeline",
     "thesis": "How retrieval augments generation -- the simplest system that actually works, with BM25",
-    "lines": 521
+    "lines": 521,
+    "paper_slug": "rag"
   },
   {
     "tier": "01-foundations",
     "name": "microresnet",
     "display": "ResNet",
     "thesis": "Residual networks from first principles: skip connections as gradient highways — proving",
-    "lines": 740
+    "lines": 740,
+    "paper_slug": "resnet"
   },
   {
     "tier": "01-foundations",
     "name": "micrornn",
     "display": "RNN vs GRU",
     "thesis": "Before attention conquered everything -- how sequences were modeled with recurrence, and why",
-    "lines": 507
+    "lines": 507,
+    "paper_slug": "rnn-elman"
   },
   {
     "tier": "01-foundations",
     "name": "microtokenizer",
     "display": "BPE Tokenizer",
     "thesis": "How text becomes numbers -- the compression algorithm hiding inside every LLM.",
-    "lines": 193
+    "lines": 193,
+    "paper_slug": "bpe"
   },
   {
     "tier": "01-foundations",
     "name": "microvae",
     "display": "VAE",
     "thesis": "How to learn a compressed, generative representation of data — the reparameterization",
-    "lines": 510
+    "lines": 510,
+    "paper_slug": "vae"
   },
   {
     "tier": "01-foundations",
     "name": "microvit",
     "display": "Vision Transformer",
     "thesis": "Vision Transformer from first principles: an image is worth 16x16 words — treating",
-    "lines": 655
+    "lines": 655,
+    "paper_slug": "vit"
   },
   {
     "tier": "01-foundations",
     "name": "rnn_vs_gru_vs_lstm",
     "display": "RNN vs GRU vs LSTM",
     "thesis": "Three generations of recurrent architectures on the same task: vanilla RNN fails at long-range",
-    "lines": 647
+    "lines": 647,
+    "paper_slug": "gru"
   },
   {
     "tier": "02-alignment",
     "name": "adam_vs_sgd",
     "display": "Adam vs SGD",
     "thesis": "Adam converges faster than SGD because it maintains per-parameter learning rates that adapt",
-    "lines": 469
+    "lines": 469,
+    "paper_slug": "adam"
   },
   {
     "tier": "02-alignment",
     "name": "microbatchnorm",
     "display": "Batch Normalization",
     "thesis": "How normalizing activations within each mini-batch stabilizes training and enables deeper networks.",
-    "lines": 457
+    "lines": 457,
+    "paper_slug": "batchnorm"
   },
   {
     "tier": "02-alignment",
     "name": "microdpo",
     "display": "DPO",
     "thesis": "Direct Preference Optimization (DPO): aligning a language model with human preferences using",
-    "lines": 614
+    "lines": 614,
+    "paper_slug": "dpo"
   },
   {
     "tier": "02-alignment",
     "name": "microdropout",
     "display": "Dropout",
     "thesis": "Why randomly destroying neurons during training prevents overfitting — dropout, weight decay,",
-    "lines": 475
+    "lines": 475,
+    "paper_slug": "dropout"
   },
   {
     "tier": "02-alignment",
     "name": "microgrpo",
     "display": "GRPO",
     "thesis": "How DeepSeek simplified RLHF — group-based reward normalization that eliminates the value",
-    "lines": 541
+    "lines": 541,
+    "paper_slug": "grpo"
   },
   {
     "tier": "02-alignment",
     "name": "microlora",
     "display": "LoRA",
     "thesis": "Low-Rank Adaptation (LoRA): fine-tuning a frozen language model by injecting tiny trainable",
-    "lines": 498
+    "lines": 498,
+    "paper_slug": "lora"
   },
   {
     "tier": "02-alignment",
     "name": "micromoe",
     "display": "Mixture of Experts",
     "thesis": "Mixture of Experts (MoE): a router network learns to dispatch each token to a subset of",
-    "lines": 562
+    "lines": 562,
+    "paper_slug": "moe-shazeer"
   },
   {
     "tier": "02-alignment",
     "name": "microppo",
     "display": "PPO (RLHF)",
     "thesis": "The full RLHF loop: pretrain a language model, train a reward model on human preferences,",
-    "lines": 802
+    "lines": 802,
+    "paper_slug": "ppo"
   },
   {
     "tier": "02-alignment",
     "name": "microqlora",
     "display": "QLoRA",
     "thesis": "How to fine-tune a 4-bit quantized model with full-precision LoRA adapters — the technique",
-    "lines": 671
+    "lines": 671,
+    "paper_slug": "qlora"
   },
   {
     "tier": "02-alignment",
     "name": "microreinforce",
     "display": "REINFORCE",
     "thesis": "The simplest policy gradient algorithm -- how log-probability weighting turns reward signals",
-    "lines": 465
+    "lines": 465,
+    "paper_slug": "reinforce"
   },
   {
     "tier": "03-systems",
     "name": "microattention",
     "display": "Attention Variants",
     "thesis": "Every attention mechanism that matters, side by side: how MHA, GQA, MQA, and sliding",
-    "lines": 368
+    "lines": 368,
+    "paper_slug": "transformer"
   },
   {
     "tier": "03-systems",
     "name": "microbeam",
     "display": "Beam Search",
     "thesis": "Beyond greedy: six decoding strategies for language model text generation, from deterministic",
-    "lines": 622
+    "lines": 622,
+    "paper_slug": "nucleus-sampling"
   },
   {
     "tier": "03-systems",
     "name": "microbm25",
     "display": "BM25",
     "thesis": "The evolution of text retrieval scoring: from raw term frequency through TF-IDF to BM25,",
-    "lines": 618
+    "lines": 618,
+    "paper_slug": "bm25"
   },
   {
     "tier": "03-systems",
     "name": "microcheckpoint",
     "display": "Activation Checkpointing",
     "thesis": "How to train models twice as deep on the same hardware — trading compute for memory",
-    "lines": 484
+    "lines": 484,
+    "paper_slug": "gradient-checkpointing"
   },
   {
     "tier": "03-systems",
     "name": "microcomplexssm",
     "display": "Complex SSM",
     "thesis": "A complex-valued state space model is mathematically identical to a real-valued one with",
-    "lines": 600
+    "lines": 600,
+    "paper_slug": "mamba-2"
   },
   {
     "tier": "03-systems",
     "name": "microdiscretize",
     "display": "Discretization",
     "thesis": "The choice of discretization method changes what a recurrence can learn — Euler, ZOH,",
-    "lines": 625
+    "lines": 625,
+    "paper_slug": "mamba-2"
   },
   {
     "tier": "03-systems",
     "name": "microflash",
     "display": "Flash Attention",
     "thesis": "Flash Attention computes exact attention identical to standard attention, but processes",
-    "lines": 358
+    "lines": 358,
+    "paper_slug": "flash-attention"
   },
   {
     "tier": "03-systems",
     "name": "microkv",
     "display": "KV-Cache",
     "thesis": "Why autoregressive generation recomputes redundant work at every step, and how the KV cache",
-    "lines": 476
+    "lines": 476,
+    "paper_slug": "kv-cache"
   },
   {
     "tier": "03-systems",
     "name": "micropaged",
     "display": "PagedAttention",
     "thesis": "How vLLM serves thousands of concurrent requests -- paged memory allocation for KV-caches",
-    "lines": 502
+    "lines": 502,
+    "paper_slug": "pagedattention"
   },
   {
     "tier": "03-systems",
     "name": "microparallel",
     "display": "Model Parallelism",
     "thesis": "How models that exceed single-device memory get distributed — tensor parallelism, pipeline",
-    "lines": 490
+    "lines": 490,
+    "paper_slug": "megatron-lm"
   },
   {
     "tier": "03-systems",
     "name": "microquant",
     "display": "Quantization",
     "thesis": "How to shrink a model by 4x with minimal quality loss -- the math behind INT8 and INT4",
-    "lines": 588
+    "lines": 588,
+    "paper_slug": "llm-int8"
   },
   {
     "tier": "03-systems",
     "name": "microroofline",
     "display": "Roofline Model",
     "thesis": "A state update running 100x more FLOPs can be faster on real hardware if it shifts from",
-    "lines": 834
+    "lines": 834,
+    "paper_slug": "roofline"
   },
   {
     "tier": "03-systems",
     "name": "microrope",
     "display": "RoPE",
     "thesis": "How position information gets baked into attention through rotation matrices — why RoPE",
-    "lines": 325
+    "lines": 325,
+    "paper_slug": "rope"
   },
   {
     "tier": "03-systems",
     "name": "microspeculative",
     "display": "Speculative Decoding",
     "thesis": "Speculative decoding from first principles: a small draft model proposes tokens that a",
-    "lines": 798
+    "lines": 798,
+    "paper_slug": "speculative-decoding"
   },
   {
     "tier": "03-systems",
     "name": "microssm",
     "display": "State Space Models",
     "thesis": "The alternative to attention -- how state space models process sequences in linear time",
-    "lines": 510
+    "lines": 510,
+    "paper_slug": "mamba-2"
   },
   {
     "tier": "03-systems",
     "name": "microturboquant",
     "display": "Turboquant",
     "thesis": "Why rotating a vector before quantizing it works -- random rotation makes coordinates",
-    "lines": 364
+    "lines": 351,
+    "paper_slug": "turboquant"
   },
   {
     "tier": "03-systems",
     "name": "microvectorsearch",
     "display": "Vector Search",
     "thesis": "Vector search from first principles: exact brute-force nearest neighbors vs approximate",
-    "lines": 472
+    "lines": 472,
+    "paper_slug": "hnsw"
   },
   {
     "tier": "04-agents",
     "name": "microbandit",
     "display": "Multi-Armed Bandit",
     "thesis": "Multi-armed bandits from first principles: three strategies — Epsilon-Greedy, UCB1, and",
-    "lines": 574
+    "lines": 574,
+    "paper_slug": "ucb1"
   },
   {
     "tier": "04-agents",
     "name": "micromcts",
     "display": "Monte Carlo Tree Search",
     "thesis": "Monte Carlo Tree Search from first principles: the algorithm behind AlphaGo's game play —",
-    "lines": 522
+    "lines": 522,
+    "paper_slug": "uct"
   },
   {
     "tier": "04-agents",
     "name": "micromemory",
     "display": "Memory-Augmented Network",
     "thesis": "Memory-augmented neural networks from first principles: a Neural Turing Machine learns to",
-    "lines": 930
+    "lines": 930,
+    "paper_slug": "ntm"
   },
   {
     "tier": "04-agents",
     "name": "microminimax",
     "display": "Minimax + Alpha-Beta",
     "thesis": "Adversarial search from first principles: minimax with alpha-beta pruning learns to play",
-    "lines": 830
+    "lines": 830,
+    "paper_slug": "alpha-beta"
   },
   {
     "tier": "04-agents",
     "name": "microreact",
     "display": "ReAct",
     "thesis": "The ReAct reasoning loop from first principles: Thought -> Action -> Observation as a",
-    "lines": 893
+    "lines": 893,
+    "paper_slug": "react"
   }
 ]

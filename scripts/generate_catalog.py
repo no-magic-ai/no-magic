@@ -1,9 +1,14 @@
 """
 Generate catalog.json from all algorithm scripts in the repository.
 
-Extracts tier, filename, display name, and thesis docstring from each .py file
-in the tier directories. Output is written to docs/catalog.json and consumed
-by the no-magic-ai.github.io website.
+Extracts tier, filename, display name, thesis docstring, paper slug, and line
+count from each .py file in the tier directories. Output is written to
+docs/catalog.json and consumed by the no-magic-ai.github.io website.
+
+From v3.0 onward, every script must have an entry in SCRIPT_TO_PAPER pointing
+at its paper card slug in the no-magic-papers repo. The build fails if a
+script is found in a tier directory without a SCRIPT_TO_PAPER entry — this
+enforces SOP §7.3 invariant 3 at catalog-generation time.
 
 Usage:
     python scripts/generate_catalog.py
@@ -68,12 +73,66 @@ DISPLAY_OVERRIDES = {
     "rnn_vs_gru_vs_lstm": "RNN vs GRU vs LSTM",
 }
 
+# Maps each script in this repo to its paper card slug in no-magic-papers.
+# Required from no-magic v3.0 per SOP §7.3 invariant 3. Missing entries fail
+# the build. Comparison-style scripts (e.g. attention_vs_none, microattention)
+# share a paper card per the multi-implementations[] precedent set by mamba-2.
+SCRIPT_TO_PAPER = {
+    "adam_vs_sgd": "adam",
+    "attention_vs_none": "transformer",
+    "microattention": "transformer",
+    "microbandit": "ucb1",
+    "microbatchnorm": "batchnorm",
+    "microbeam": "nucleus-sampling",
+    "microbert": "bert",
+    "microbm25": "bm25",
+    "microcheckpoint": "gradient-checkpointing",
+    "microcomplexssm": "mamba-2",
+    "microconv": "lenet-5",
+    "microdiffusion": "ddpm",
+    "microdiscretize": "mamba-2",
+    "microdpo": "dpo",
+    "microdropout": "dropout",
+    "microembedding": "word2vec",
+    "microflash": "flash-attention",
+    "microgan": "gan",
+    "microgpt": "gpt-1",
+    "microgrpo": "grpo",
+    "microkv": "kv-cache",
+    "microlora": "lora",
+    "microlstm": "lstm",
+    "micromcts": "uct",
+    "micromemory": "ntm",
+    "microminimax": "alpha-beta",
+    "micromoe": "moe-shazeer",
+    "microoptimizer": "adam",
+    "micropaged": "pagedattention",
+    "microparallel": "megatron-lm",
+    "microppo": "ppo",
+    "microqlora": "qlora",
+    "microquant": "llm-int8",
+    "microrag": "rag",
+    "microreact": "react",
+    "microreinforce": "reinforce",
+    "microresnet": "resnet",
+    "micrornn": "rnn-elman",
+    "microroofline": "roofline",
+    "microrope": "rope",
+    "microspeculative": "speculative-decoding",
+    "microssm": "mamba-2",
+    "microtokenizer": "bpe",
+    "microturboquant": "turboquant",
+    "microvae": "vae",
+    "microvectorsearch": "hnsw",
+    "microvit": "vit",
+    "rnn_vs_gru_vs_lstm": "gru",
+}
+
 
 def name_to_display(name: str) -> str:
     """Convert a script name to a human-readable display name."""
     if name in DISPLAY_OVERRIDES:
         return DISPLAY_OVERRIDES[name]
-    # Fallback: strip 'micro' prefix and title-case
     clean = name.replace("micro", "", 1) if name.startswith("micro") else name
     return clean.replace("_", " ").title()
 
@@ -85,14 +144,25 @@ def extract_thesis(path: Path) -> str:
     docstring = ast.get_docstring(tree)
     if not docstring:
         return ""
-    # Take the first sentence (up to first period followed by space/newline, or first newline)
-    first_line = docstring.strip().split("\n")[0].strip()
-    return first_line
+    return docstring.strip().split("\n")[0].strip()
 
 
 def count_lines(path: Path) -> int:
     """Count non-empty lines in a script."""
     return sum(1 for line in path.read_text(encoding="utf-8").splitlines() if line.strip())
+
+
+def lookup_paper_slug(script_name: str) -> str:
+    """Look up the paper slug for a script. Fail loudly on missing entry."""
+    paper = SCRIPT_TO_PAPER.get(script_name)
+    if paper is None:
+        raise SystemExit(
+            f"missing paper_slug for script {script_name!r}: add an entry to "
+            f"SCRIPT_TO_PAPER in scripts/generate_catalog.py pointing at the "
+            f"corresponding paper card in no-magic-papers/papers/. SOP §7.3 "
+            f"invariant 3 forbids scripts without paper cards from no-magic v3.0."
+        )
+    return paper
 
 
 def build_catalog() -> list[dict]:
@@ -110,6 +180,7 @@ def build_catalog() -> list[dict]:
                 "display": name_to_display(name),
                 "thesis": extract_thesis(script),
                 "lines": count_lines(script),
+                "paper_slug": lookup_paper_slug(name),
             })
     return catalog
 
