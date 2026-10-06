@@ -371,8 +371,16 @@ def quantize_zeropoint_int8(
     all_weights = [w for row in weights_float for w in row]
     w_min = min(all_weights)
     w_max = max(all_weights)
-    if w_max == w_min:
+    if w_max == w_min == 0:
         return [[0] * len(row) for row in weights_float], 1.0, 0
+    if w_max == w_min:
+        # A nonzero constant tensor has an empty range, so the scale formula
+        # would divide by zero. Signpost: LLM.int8() and GPTQ define the range
+        # only for max > min and prescribe no constant branch. As a teaching
+        # boundary extension, widen the range to include zero: the constant then
+        # sits on a grid endpoint and the same affine mapping reconstructs it.
+        w_min = min(w_min, 0.0)
+        w_max = max(w_max, 0.0)
     scale = (w_max - w_min) / 255.0
     zero_point = round(-w_min / scale)
     quantized = [
