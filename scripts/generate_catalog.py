@@ -140,9 +140,17 @@ SCRIPT_TO_PAPER: dict[str, str] = {
 
 # What running a script demonstrates. Assigned per script below from its source;
 # never inferred from the filename or the thesis.
+#   comparison     — trains two or more alternative arms for a common teaching task
+#                    and reports arm-versus-arm quality or training-cost outcomes.
+#                    Checked first: it applies even when the arms also run inference.
+#                    Arms are the trained alternatives compared against each other;
+#                    models trained only as auxiliaries of a decoding or serving
+#                    method (draft, reference) and sequential stages of one pipeline
+#                    are not arms
 #   train_infer    — learns parameters or estimates from data, then uses the learned
-#                    state for inference, generation, decisions or evaluation
-#   comparison     — trains matched arms side by side; the comparison is the lesson
+#                    state for inference, generation, decisions or evaluation,
+#                    including one trained model run through alternative decoding or
+#                    serving methods
 #   forward_pass   — runs untrained forward computations of a model component to
 #                    show a mechanism; no learning phase
 #   algorithm_demo — runs a non-learning algorithm (scoring, hashing, search,
@@ -166,7 +174,8 @@ class TeachingContract:
 
     `adaptation` discloses, in plain source-state terms, where the script differs
     from the linked paper card (different cited sources, extra or missing
-    components, toy-scale simplifications). It is not a paper-replication claim.
+    components, toy-scale simplifications). It is not a paper-replication claim,
+    and a missing note does not mean the script replicates its card exactly.
     """
 
     kind: TeachingKind
@@ -195,8 +204,8 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "multi-query and sliding-window attention. Beyond the linked Transformer card, "
         "the source cites Shazeer (2019), Ainslie et al. (2023) and Beltagy et al. (2020).",
     ),
-    "microbandit": TeachingContract("train_infer", "in_script"),
-    "microbatchnorm": TeachingContract("train_infer", "in_script"),
+    "microbandit": TeachingContract("comparison", "in_script"),
+    "microbatchnorm": TeachingContract("comparison", "in_script"),
     "microbeam": TeachingContract(
         "train_infer",
         "names_download",
@@ -215,7 +224,7 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "separate inference phase.",
     ),
     "microcomplexssm": TeachingContract(
-        "train_infer",
+        "comparison",
         "in_script",
         "Teaches the complex-to-real (data-dependent RoPE) SSM equivalence. The source "
         "cites Mamba-3 (arXiv:2603.15569) Proposition 3 and RoPE (Su et al., 2021); the "
@@ -224,14 +233,14 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
     "microconv": TeachingContract("train_infer", "in_script"),
     "microdiffusion": TeachingContract("train_infer", "in_script"),
     "microdiscretize": TeachingContract(
-        "train_infer",
+        "comparison",
         "in_script",
         "Compares Euler, zero-order-hold and trapezoidal discretization. The source cites "
         "Mamba-3 (arXiv:2603.15569) Section 3 and S4 (Gu et al., 2022); the linked "
         "Mamba-2 card's structured state space duality is not implemented.",
     ),
     "microdpo": TeachingContract("train_infer", "names_download"),
-    "microdropout": TeachingContract("train_infer", "names_download"),
+    "microdropout": TeachingContract("comparison", "names_download"),
     "microembedding": TeachingContract("train_infer", "names_download"),
     "microflash": TeachingContract("forward_pass", "in_script"),
     "microgan": TeachingContract("train_infer", "in_script"),
@@ -245,12 +254,33 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "names and samples from it; there is no supervised task fine-tuning stage.",
     ),
     "microgrpo": TeachingContract("train_infer", "names_download"),
-    "microkv": TeachingContract("train_infer", "names_download"),
+    "microkv": TeachingContract(
+        "train_infer",
+        "names_download",
+        "Trains a small model, then compares generation with and without a KV cache "
+        "and adds a paged-allocation simulation. Beyond the linked Pope et al. (2022) "
+        "card, the source cites Kwon et al. (2023) for the paged allocation.",
+    ),
     "microlora": TeachingContract("train_infer", "names_download"),
     "microlstm": TeachingContract("train_infer", "names_download"),
-    "micromcts": TeachingContract("algorithm_demo", "in_script"),
+    "micromcts": TeachingContract(
+        "algorithm_demo",
+        "in_script",
+        "Plays tic-tac-toe with UCB1 child selection and uniformly random rollouts. The "
+        "source cites Coulom (2006) and Silver et al. (2016) rather than the linked UCT "
+        "card (Kocsis & Szepesvari, 2006). Unlike AlphaGo, it trains no policy or value "
+        "network.",
+    ),
     "micromemory": TeachingContract("train_infer", "in_script"),
-    "microminimax": TeachingContract("train_infer", "in_script"),
+    "microminimax": TeachingContract(
+        "train_infer",
+        "in_script",
+        "Trains a small MLP to score Connect Four positions from random-play game "
+        "outcomes, then uses it as the leaf evaluator of depth-limited minimax with "
+        "alpha-beta pruning and iterative deepening. The source cites Knuth & Moore "
+        "(1975) and Shannon (1950); their analysis concerns search and pruning given "
+        "position values, not this learned evaluator.",
+    ),
     "micromoe": TeachingContract(
         "train_infer",
         "names_download",
@@ -259,14 +289,14 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "tractable.",
     ),
     "microoptimizer": TeachingContract(
-        "train_infer",
+        "comparison",
         "names_download",
         "Trains character bigram models with SGD, Momentum, RMSProp and Adam, plus a "
         "warmup and cosine-decay extension citing Loshchilov & Hutter (2016). The linked "
         "card covers Adam only.",
     ),
     "micropaged": TeachingContract("forward_pass", "in_script"),
-    "microparallel": TeachingContract("train_infer", "in_script"),
+    "microparallel": TeachingContract("comparison", "in_script"),
     "microppo": TeachingContract(
         "train_infer",
         "names_download",
@@ -285,16 +315,16 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
     "microquant": TeachingContract("train_infer", "names_download"),
     "microrag": TeachingContract("train_infer", "in_script"),
     "microreact": TeachingContract("train_infer", "in_script"),
-    "microreinforce": TeachingContract("train_infer", "in_script"),
-    "microresnet": TeachingContract("train_infer", "in_script"),
+    "microreinforce": TeachingContract("comparison", "in_script"),
+    "microresnet": TeachingContract("comparison", "in_script"),
     "micrornn": TeachingContract(
-        "train_infer",
+        "comparison",
         "names_download",
         "Trains a vanilla RNN and a GRU side by side. The source cites Rumelhart et al. "
         "for the vanilla RNN and Cho et al. (2014) for the GRU; the linked card is "
         "Elman (1990).",
     ),
-    "microroofline": TeachingContract("train_infer", "in_script"),
+    "microroofline": TeachingContract("comparison", "in_script"),
     "microrope": TeachingContract("forward_pass", "in_script"),
     "microspeculative": TeachingContract("train_infer", "names_download"),
     "microssm": TeachingContract(

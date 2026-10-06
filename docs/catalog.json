@@ -94,7 +94,7 @@
     "thesis": "Why Adam converges when SGD stalls — momentum, adaptive learning rates, and the geometry of",
     "lines": 585,
     "paper_slug": "adam",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "names_download",
     "adaptation_note": "Trains character bigram models with SGD, Momentum, RMSProp and Adam, plus a warmup and cosine-decay extension citing Loshchilov & Hutter (2016). The linked card covers Adam only."
   },
@@ -116,7 +116,7 @@
     "thesis": "Residual networks from first principles: skip connections as gradient highways — proving",
     "lines": 740,
     "paper_slug": "resnet",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": null
   },
@@ -127,7 +127,7 @@
     "thesis": "Before attention conquered everything -- how sequences were modeled with recurrence, and why",
     "lines": 507,
     "paper_slug": "rnn-elman",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "names_download",
     "adaptation_note": "Trains a vanilla RNN and a GRU side by side. The source cites Rumelhart et al. for the vanilla RNN and Cho et al. (2014) for the GRU; the linked card is Elman (1990)."
   },
@@ -193,7 +193,7 @@
     "thesis": "How normalizing activations within each mini-batch stabilizes training and enables deeper networks.",
     "lines": 457,
     "paper_slug": "batchnorm",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": null
   },
@@ -215,7 +215,7 @@
     "thesis": "Why randomly destroying neurons during training prevents overfitting — dropout, weight decay,",
     "lines": 475,
     "paper_slug": "dropout",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "names_download",
     "adaptation_note": null
   },
@@ -281,7 +281,7 @@
     "thesis": "The simplest policy gradient algorithm -- how log-probability weighting turns reward signals",
     "lines": 465,
     "paper_slug": "reinforce",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": null
   },
@@ -336,7 +336,7 @@
     "thesis": "A complex-valued state space model is mathematically identical to a real-valued one with",
     "lines": 600,
     "paper_slug": "mamba-2",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": "Teaches the complex-to-real (data-dependent RoPE) SSM equivalence. The source cites Mamba-3 (arXiv:2603.15569) Proposition 3 and RoPE (Su et al., 2021); the linked Mamba-2 card's structured state space duality is not implemented."
   },
@@ -347,7 +347,7 @@
     "thesis": "The choice of discretization method changes what a recurrence can learn — Euler, ZOH,",
     "lines": 625,
     "paper_slug": "mamba-2",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": "Compares Euler, zero-order-hold and trapezoidal discretization. The source cites Mamba-3 (arXiv:2603.15569) Section 3 and S4 (Gu et al., 2022); the linked Mamba-2 card's structured state space duality is not implemented."
   },
@@ -371,7 +371,7 @@
     "paper_slug": "kv-cache",
     "teaching_kind": "train_infer",
     "data_source": "names_download",
-    "adaptation_note": null
+    "adaptation_note": "Trains a small model, then compares generation with and without a KV cache and adds a paged-allocation simulation. Beyond the linked Pope et al. (2022) card, the source cites Kwon et al. (2023) for the paged allocation."
   },
   {
     "tier": "03-systems",
@@ -391,7 +391,7 @@
     "thesis": "How models that exceed single-device memory get distributed — tensor parallelism, pipeline",
     "lines": 490,
     "paper_slug": "megatron-lm",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": null
   },
@@ -413,7 +413,7 @@
     "thesis": "A state update running 100x more FLOPs can be faster on real hardware if it shifts from",
     "lines": 834,
     "paper_slug": "roofline",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": null
   },
@@ -479,7 +479,7 @@
     "thesis": "Multi-armed bandits from first principles: three strategies — Epsilon-Greedy, UCB1, and",
     "lines": 574,
     "paper_slug": "ucb1",
-    "teaching_kind": "train_infer",
+    "teaching_kind": "comparison",
     "data_source": "in_script",
     "adaptation_note": null
   },
@@ -492,7 +492,7 @@
     "paper_slug": "uct",
     "teaching_kind": "algorithm_demo",
     "data_source": "in_script",
-    "adaptation_note": null
+    "adaptation_note": "Plays tic-tac-toe with UCB1 child selection and uniformly random rollouts. The source cites Coulom (2006) and Silver et al. (2016) rather than the linked UCT card (Kocsis & Szepesvari, 2006). Unlike AlphaGo, it trains no policy or value network."
   },
   {
     "tier": "04-agents",
@@ -514,7 +514,7 @@
     "paper_slug": "alpha-beta",
     "teaching_kind": "train_infer",
     "data_source": "in_script",
-    "adaptation_note": null
+    "adaptation_note": "Trains a small MLP to score Connect Four positions from random-play game outcomes, then uses it as the leaf evaluator of depth-limited minimax with alpha-beta pruning and iterative deepening. The source cites Knuth & Moore (1975) and Shannon (1950); their analysis concerns search and pruning given position values, not this learned evaluator."
   },
   {
     "tier": "04-agents",
