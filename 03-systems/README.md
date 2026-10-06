@@ -4,28 +4,40 @@ The engineering that makes models fast, small, and deployable. These scripts dem
 
 ## Scripts
 
-Measured on Apple M-series, Python 3.12. Times are wall-clock.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json).
 
 | Script               | Algorithm                                                         | Time   | Status | Video                                              |
 | -------------------- | ----------------------------------------------------------------- | ------ | ------ | -------------------------------------------------- |
 | `microattention.py`  | Attention variants compendium (MHA, GQA, MQA, sliding window)     | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microattention.gif)  |
+| `microbm25.py`       | Retrieval scoring — term frequency → TF-IDF → BM25 (non-learning) | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbm25.gif)       |
 | `microbeam.py`       | Decoding strategies (greedy, top-k, top-p, beam, speculative)     | 1m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbeam.gif)       |
 | `microcheckpoint.py` | Activation/gradient checkpointing — trading compute for memory    | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcheckpoint.gif) |
 | `microflash.py`      | Flash Attention algorithmic simulation (tiling, online softmax)   | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microflash.gif)      |
 | `microkv.py`         | KV-cache mechanics (with vs. without, paged attention)            | 0m 33s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microkv.gif)         |
 | `micropaged.py`      | PagedAttention — vLLM-style paged KV-cache memory management      | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/micropaged.gif)      |
-| `microparallel.py`   | Tensor and pipeline parallelism — distributed model inference     | 0m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microparallel.gif)   |
+| `microparallel.py`   | Tensor and pipeline parallelism — simulated parallel training of a 4-layer MLP, compared with single-device training | 0m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microparallel.gif)   |
 | `microquant.py`      | Weight quantization (INT8, INT4, per-channel vs. per-tensor)      | 1m 22s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microquant.gif)      |
 | `microturboquant.py` | Data-oblivious vector quantization via random rotation + QJL      | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microturboquant.gif) |
 | `microrope.py`       | Rotary Position Embedding (RoPE) — position via rotation matrices | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrope.gif)       |
+| `microspeculative.py` | Speculative decoding — trained draft model proposes, trained verifier accepts or rejects | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microspeculative.gif) |
 | `microssm.py`        | State Space Models (Mamba-style) — linear-time sequence modeling  | 0m 34s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microssm.gif)        |
 | `microcomplexssm.py` | Complex SSM equivalence — complex eigenvalues = real + RoPE       | < 1m   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcomplexssm.gif) |
 | `microdiscretize.py`  | Discretization methods — Euler, ZOH, Trapezoidal comparison       | < 1m   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdiscretize.gif) |
 | `microroofline.py`   | Roofline model — SISO vs MIMO hardware utilization                | < 1m   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microroofline.gif)   |
+| `microvectorsearch.py` | Exact brute-force vs. LSH approximate nearest-neighbour search (non-learning) | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microvectorsearch.gif) |
 
-### Forward-Pass Scripts
+### Teaching Kinds
 
-`microattention.py`, `microflash.py`, `microcheckpoint.py`, `micropaged.py`, and `microrope.py` are **forward-pass comparisons** — they demonstrate algorithmic mechanics rather than training loops. This is an intentional exception to the train+infer rule: the pedagogical value is in comparing implementations side-by-side.
+Each script's `teaching_kind` is recorded explicitly in [`docs/catalog.json`](../docs/catalog.json), generated by `scripts/generate_catalog.py`. The remaining systems scripts (`microbeam.py`, `microkv.py`, `microquant.py`, `microspeculative.py`, `microssm.py`) are `train_infer`: each trains one task model and then runs inference, including alternative decoding or serving methods; a draft model trained only to support decoding is not a separate arm.
+
+- **Trained comparisons (`comparison`):** these train two or more alternative arms on a common task and compare their results; this is not a no-inference label.
+  - `microcheckpoint.py` trains two identically initialized MLPs for the same number of SGD steps, one with standard backpropagation and one with checkpointed recomputation, and compares loss, time, stored activations and gradient equality. It has no separate inference stage.
+  - `microcomplexssm.py` trains real, complex and real-plus-RoPE SSM variants on parity and compares them.
+  - `microdiscretize.py` trains Euler, zero-order-hold and trapezoidal SSMs on sine and parity tasks and compares them.
+  - `microparallel.py` trains the same MLP under single-device, tensor-parallel and pipeline-parallel strategies and compares accuracy and time.
+  - `microroofline.py` trains SISO and MIMO SSMs on the same task and compares their training results, alongside roofline measurements.
+- **Untrained forward passes (`forward_pass`):** `microattention.py`, `microflash.py`, `micropaged.py`, and `microrope.py` run forward computations of a mechanism on untrained inputs and weights. They have no training loop; the pedagogical value is in comparing the mechanics side by side.
+- **Non-learning algorithms (`algorithm_demo`):** `microbm25.py`, `microvectorsearch.py`, and `microturboquant.py` run retrieval scoring, locality-sensitive hashing and rotation-based quantization without training a model.
 
 ### Algorithmic Simulations
 
@@ -35,7 +47,6 @@ Measured on Apple M-series, Python 3.12. Times are wall-clock.
 
 | Algorithm                             | What It Would Teach                                   | Notes                                                   |
 | ------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------- |
-| **Speculative Decoding (standalone)** | Draft-verify paradigm in depth                        | Currently part of microbeam; could be its own deep-dive |
 | **Continuous Batching**               | Dynamic batching for throughput optimization          | The technique behind vLLM's performance                 |
 | **Prefix Caching**                    | Sharing KV-cache across requests with common prefixes | Extension of microkv concepts                           |
 | **Mixed Precision**                   | FP16/BF16 training with loss scaling                  | How half-precision training works                       |
