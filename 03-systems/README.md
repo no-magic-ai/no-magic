@@ -47,7 +47,6 @@ Each script's `teaching_kind` is recorded explicitly in [`docs/catalog.json`](..
 
 | Algorithm                             | What It Would Teach                                   | Notes                                                   |
 | ------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------- |
-| **Speculative Decoding (standalone)** | Draft-verify paradigm in depth                        | Currently part of microbeam; could be its own deep-dive |
 | **Continuous Batching**               | Dynamic batching for throughput optimization          | The technique behind vLLM's performance                 |
 | **Prefix Caching**                    | Sharing KV-cache across requests with common prefixes | Extension of microkv concepts                           |
 | **Mixed Precision**                   | FP16/BF16 training with loss scaling                  | How half-precision training works                       |
