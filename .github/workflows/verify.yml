@@ -14,101 +14,95 @@ on:
           - quick
           - full
 
+permissions:
+  contents: read
+
 jobs:
-  # ── Fast gate: runs on every push/PR (~30 seconds) ──────────────
-  # Catches syntax errors, import failures, and missing seed.
-  lint:
+  # ── Fast gates: every push/PR, at the exact pushed or PR head commit ──
+  # scripts/verify.py is the single discovery authority for every job below.
+  quick:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Syntax, seed and import checks for every tier script
+        run: python scripts/verify.py --quick
 
-      - name: Syntax check all scripts
-        run: |
-          status=0
-          for script in 0[1-4]-*/*.py; do
-            if ! python -m py_compile "$script" 2>&1; then
-              echo "FAIL: $script"
-              status=1
-            fi
-          done
-          exit $status
-
-      - name: Verify random.seed(42) is present
-        run: |
-          status=0
-          for script in 0[1-4]-*/micro*.py; do
-            if ! grep -q 'random\.seed(42)' "$script"; then
-              echo "MISSING random.seed(42): $script"
-              status=1
-            fi
-          done
-          exit $status
-
-      - name: Verify no external imports
-        run: |
-          # Allowed stdlib modules — anything else is a constraint violation.
-          status=0
-          for script in 0[1-4]-*/micro*.py; do
-            # Extract import lines, skip stdlib and __future__
-            bad=$(python -c "
-          import re, sys
-          allowed = {
-              'os', 'math', 'random', 'json', 'struct', 'urllib', 'collections',
-              'itertools', 'functools', 'string', 'hashlib', 'time', 'sys',
-              'argparse', 'textwrap', 'io', 'copy', 'abc', 'typing',
-              'urllib.request', 'urllib.error', 'urllib.parse',
-              'collections.abc', '__future__',
-          }
-          text = open(sys.argv[1]).read()
-          for m in re.finditer(r'^(?:import|from)\s+([\w.]+)', text, re.MULTILINE):
-              mod = m.group(1).split('.')[0]
-              full = m.group(1)
-              if mod not in allowed and full not in allowed:
-                  print(f'  {full}')
-          " "$script" 2>/dev/null)
-            if [ -n "$bad" ]; then
-              echo "EXTERNAL IMPORT in $script:"
-              echo "$bad"
-              status=1
-            fi
-          done
-          exit $status
-
-  # ── Full verification: manual trigger only ──────────────────────
-  # Runs every script end-to-end. Takes 30-60 minutes on CI runners.
-  full:
-    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'full'
+  behavior:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Numerical property checks against the teaching source
+        run: python scripts/verify.py --behavior
+
+  # ── Program selection: changed scripts on PRs, every script in manual full mode ──
+  select:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'full')
+    runs-on: ubuntu-latest
+    outputs:
+      programs: ${{ steps.select.outputs.programs }}
+      count: ${{ steps.select.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Select programs
+        id: select
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            programs=$(python scripts/verify.py --list-json --changed-from "$BASE_SHA")
+          else
+            programs=$(python scripts/verify.py --list-json)
+          fi
+          count=$(python -c 'import json, sys; print(len(json.loads(sys.argv[1])))' "$programs")
+          echo "Selected $count program(s): $programs"
+          if [ "$count" = "0" ]; then
+            echo "::notice::No runnable tier script changed; no program was executed (not a runtime pass)."
+          fi
+          echo "programs=$programs" >> "$GITHUB_OUTPUT"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+  # ── Execution: one bounded job per selected program, default settings ──
+  # verify.py enforces the 1800-second per-script deadline, kills the script's
+  # process group on timeout and passes the script's native output through.
+  run:
+    needs: select
+    if: needs.select.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        section: [01-foundations, 02-alignment, 03-systems, 04-agents]
-
+        program: ${{ fromJSON(needs.select.outputs.programs) }}
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            names.txt
-            *.json
-            *.txt
-          key: datasets-${{ matrix.section }}-${{ hashFiles(format('{0}/*.py', matrix.section)) }}
-          restore-keys: |
-            datasets-${{ matrix.section }}-
-
-      - name: Run scripts in ${{ matrix.section }}
-        run: |
-          # `timeout` is a Linux coreutil — intentionally Ubuntu-only.
-          for script in ${{ matrix.section }}/micro*.py; do
-            [ -f "$script" ] || continue
-            echo "==> $script"
-            timeout 900 python "$script"
-          done
+      - name: Run program
+        env:
+          PROGRAM: ${{ matrix.program }}
+        run: python scripts/verify.py "$(basename -- "$PROGRAM")"

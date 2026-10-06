@@ -400,7 +400,7 @@
     "name": "microquant",
     "display": "Quantization",
     "thesis": "How to shrink a model by 4x with minimal quality loss -- the math behind INT8 and INT4",
-    "lines": 588,
+    "lines": 596,
     "paper_slug": "llm-int8",
     "teaching_kind": "train_infer",
     "data_source": "names_download",

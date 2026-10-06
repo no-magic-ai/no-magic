@@ -43,7 +43,7 @@ Every item here must be completed before merging a new algorithm script. The 04-
 
 - [ ] Run the script end-to-end: `python <tier>/micro<name>.py`
 - [ ] Confirm runtime is under 10 minutes on a laptop CPU (M-series Mac target: under 7 minutes)
-- [ ] Run `python scripts/verify.py <tier>/micro<name>.py` and confirm it passes
+- [ ] Run `python scripts/verify.py micro<name>.py` (bare filename, no tier directory) and confirm it passes
 - [ ] Run twice and confirm `random.seed(42)` produces identical output both times
 - [ ] Confirm the script does what its recorded teaching kind says, checking `comparison` first: `comparison` trains two or more alternative arms on a common task and compares them (inference may follow); `train_infer` trains one model, possibly with decoding or serving auxiliaries, and then performs inference; `forward_pass` and `algorithm_demo` are reviewed exceptions without training
 
