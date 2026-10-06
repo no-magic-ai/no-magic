@@ -5,7 +5,10 @@
     "display": "Attention vs None",
     "thesis": "Attention is not just helpful -- it is the mechanism that lets a model look back across an",
     "lines": 511,
-    "paper_slug": "transformer"
+    "paper_slug": "transformer",
+    "teaching_kind": "comparison",
+    "data_source": "names_download",
+    "adaptation_note": "Trains two GRU character models, one with additive attention over hidden states and one without; the source cites Bahdanau et al. (2015). It does not implement the Transformer self-attention architecture of the linked card."
   },
   {
     "tier": "01-foundations",
@@ -13,7 +16,10 @@
     "display": "BERT",
     "thesis": "The other half of the transformer — how BERT learns bidirectional representations by predicting",
     "lines": 501,
-    "paper_slug": "bert"
+    "paper_slug": "bert",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -21,7 +27,10 @@
     "display": "CNN",
     "thesis": "How a sliding kernel extracts spatial features — the convolution operation, pooling, and feature",
     "lines": 549,
-    "paper_slug": "lenet-5"
+    "paper_slug": "lenet-5",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -29,7 +38,10 @@
     "display": "Denoising Diffusion",
     "thesis": "How images emerge from noise -- the denoising diffusion algorithm behind Stable Diffusion,",
     "lines": 461,
-    "paper_slug": "ddpm"
+    "paper_slug": "ddpm",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -37,7 +49,10 @@
     "display": "Word Embeddings",
     "thesis": "How meaning becomes geometry — training vectors where distance equals similarity,",
     "lines": 377,
-    "paper_slug": "word2vec"
+    "paper_slug": "word2vec",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -45,7 +60,10 @@
     "display": "GAN",
     "thesis": "Two networks at war -- how a generator learns to fool a discriminator, and why the",
     "lines": 534,
-    "paper_slug": "gan"
+    "paper_slug": "gan",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -53,7 +71,10 @@
     "display": "Autoregressive GPT",
     "thesis": "The autoregressive language model from first principles: GPT learns to predict the next",
     "lines": 513,
-    "paper_slug": "gpt-1"
+    "paper_slug": "gpt-1",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "Linked to the GPT-1 card (Radford et al., 2018), but the source says it follows the GPT-2 architecture (Radford et al., 2019) with RMSNorm instead of LayerNorm, ReLU instead of GELU and no bias terms, and that its algorithmic flow was inspired by Karpathy's microgpt.py. It trains a character-level model on names and samples from it; there is no supervised task fine-tuning stage."
   },
   {
     "tier": "01-foundations",
@@ -61,7 +82,10 @@
     "display": "LSTM",
     "thesis": "Long Short-Term Memory from first principles: the 4-gate architecture that solved the",
     "lines": 530,
-    "paper_slug": "lstm"
+    "paper_slug": "lstm",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -69,7 +93,10 @@
     "display": "Optimizer Comparison",
     "thesis": "Why Adam converges when SGD stalls — momentum, adaptive learning rates, and the geometry of",
     "lines": 585,
-    "paper_slug": "adam"
+    "paper_slug": "adam",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "Trains character bigram models with SGD, Momentum, RMSProp and Adam, plus a warmup and cosine-decay extension citing Loshchilov & Hutter (2016). The linked card covers Adam only."
   },
   {
     "tier": "01-foundations",
@@ -77,7 +104,10 @@
     "display": "RAG Pipeline",
     "thesis": "How retrieval augments generation -- the simplest system that actually works, with BM25",
     "lines": 521,
-    "paper_slug": "rag"
+    "paper_slug": "rag",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -85,7 +115,10 @@
     "display": "ResNet",
     "thesis": "Residual networks from first principles: skip connections as gradient highways — proving",
     "lines": 740,
-    "paper_slug": "resnet"
+    "paper_slug": "resnet",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -93,7 +126,10 @@
     "display": "RNN vs GRU",
     "thesis": "Before attention conquered everything -- how sequences were modeled with recurrence, and why",
     "lines": 507,
-    "paper_slug": "rnn-elman"
+    "paper_slug": "rnn-elman",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "Trains a vanilla RNN and a GRU side by side. The source cites Rumelhart et al. for the vanilla RNN and Cho et al. (2014) for the GRU; the linked card is Elman (1990)."
   },
   {
     "tier": "01-foundations",
@@ -101,7 +137,10 @@
     "display": "BPE Tokenizer",
     "thesis": "How text becomes numbers -- the compression algorithm hiding inside every LLM.",
     "lines": 193,
-    "paper_slug": "bpe"
+    "paper_slug": "bpe",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -109,7 +148,10 @@
     "display": "VAE",
     "thesis": "How to learn a compressed, generative representation of data — the reparameterization",
     "lines": 510,
-    "paper_slug": "vae"
+    "paper_slug": "vae",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": "Per the source, uses plain float arrays with manual gradient computation instead of scalar autograd to meet the runtime limit."
   },
   {
     "tier": "01-foundations",
@@ -117,7 +159,10 @@
     "display": "Vision Transformer",
     "thesis": "Vision Transformer from first principles: an image is worth 16x16 words — treating",
     "lines": 655,
-    "paper_slug": "vit"
+    "paper_slug": "vit",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "01-foundations",
@@ -125,7 +170,10 @@
     "display": "RNN vs GRU vs LSTM",
     "thesis": "Three generations of recurrent architectures on the same task: vanilla RNN fails at long-range",
     "lines": 647,
-    "paper_slug": "gru"
+    "paper_slug": "gru",
+    "teaching_kind": "comparison",
+    "data_source": "names_download",
+    "adaptation_note": "Trains a vanilla RNN, a GRU and an LSTM on a long-range name task. The source cites Elman (1990), Hochreiter & Schmidhuber (1997) and Cho et al. (2014); the linked card covers the GRU."
   },
   {
     "tier": "02-alignment",
@@ -133,7 +181,10 @@
     "display": "Adam vs SGD",
     "thesis": "Adam converges faster than SGD because it maintains per-parameter learning rates that adapt",
     "lines": 469,
-    "paper_slug": "adam"
+    "paper_slug": "adam",
+    "teaching_kind": "comparison",
+    "data_source": "names_download",
+    "adaptation_note": "Trains the same character bigram model with Adam and with SGD on identical data. The source also cites Robbins & Monro (1951) for SGD; the linked card covers Adam."
   },
   {
     "tier": "02-alignment",
@@ -141,7 +192,10 @@
     "display": "Batch Normalization",
     "thesis": "How normalizing activations within each mini-batch stabilizes training and enables deeper networks.",
     "lines": 457,
-    "paper_slug": "batchnorm"
+    "paper_slug": "batchnorm",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "02-alignment",
@@ -149,7 +203,10 @@
     "display": "DPO",
     "thesis": "Direct Preference Optimization (DPO): aligning a language model with human preferences using",
     "lines": 614,
-    "paper_slug": "dpo"
+    "paper_slug": "dpo",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "02-alignment",
@@ -157,7 +214,10 @@
     "display": "Dropout",
     "thesis": "Why randomly destroying neurons during training prevents overfitting — dropout, weight decay,",
     "lines": 475,
-    "paper_slug": "dropout"
+    "paper_slug": "dropout",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "02-alignment",
@@ -165,7 +225,10 @@
     "display": "GRPO",
     "thesis": "How DeepSeek simplified RLHF — group-based reward normalization that eliminates the value",
     "lines": 541,
-    "paper_slug": "grpo"
+    "paper_slug": "grpo",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "02-alignment",
@@ -173,7 +236,10 @@
     "display": "LoRA",
     "thesis": "Low-Rank Adaptation (LoRA): fine-tuning a frozen language model by injecting tiny trainable",
     "lines": 498,
-    "paper_slug": "lora"
+    "paper_slug": "lora",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "02-alignment",
@@ -181,7 +247,10 @@
     "display": "Mixture of Experts",
     "thesis": "Mixture of Experts (MoE): a router network learns to dispatch each token to a subset of",
     "lines": 562,
-    "paper_slug": "moe-shazeer"
+    "paper_slug": "moe-shazeer",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "Per the source, expert MLPs use plain floats with analytically computed gradients while the router uses scalar autograd, to keep pure-Python runtime tractable."
   },
   {
     "tier": "02-alignment",
@@ -189,7 +258,10 @@
     "display": "PPO (RLHF)",
     "thesis": "The full RLHF loop: pretrain a language model, train a reward model on human preferences,",
     "lines": 802,
-    "paper_slug": "ppo"
+    "paper_slug": "ppo",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "Per the source, the reward model is a small MLP trained separately with a pairwise ranking loss and manual SGD, and the reward model and value function use plain floats without autograd."
   },
   {
     "tier": "02-alignment",
@@ -197,7 +269,10 @@
     "display": "QLoRA",
     "thesis": "How to fine-tune a 4-bit quantized model with full-precision LoRA adapters — the technique",
     "lines": 671,
-    "paper_slug": "qlora"
+    "paper_slug": "qlora",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "Toy-scale simulation: a one-layer, 16-dimensional base model trained on names, NF4 levels from a normal-quantile approximation and quantization blocks of 8 weights (the source notes production QLoRA uses 64). The source says the architecture follows the microgpt pattern with pedagogical simplifications."
   },
   {
     "tier": "02-alignment",
@@ -205,7 +280,10 @@
     "display": "REINFORCE",
     "thesis": "The simplest policy gradient algorithm -- how log-probability weighting turns reward signals",
     "lines": 465,
-    "paper_slug": "reinforce"
+    "paper_slug": "reinforce",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -213,7 +291,10 @@
     "display": "Attention Variants",
     "thesis": "Every attention mechanism that matters, side by side: how MHA, GQA, MQA, and sliding",
     "lines": 368,
-    "paper_slug": "transformer"
+    "paper_slug": "transformer",
+    "teaching_kind": "forward_pass",
+    "data_source": "in_script",
+    "adaptation_note": "Untrained side-by-side forward computations of multi-head, grouped-query, multi-query and sliding-window attention. Beyond the linked Transformer card, the source cites Shazeer (2019), Ainslie et al. (2023) and Beltagy et al. (2020)."
   },
   {
     "tier": "03-systems",
@@ -221,7 +302,10 @@
     "display": "Beam Search",
     "thesis": "Beyond greedy: six decoding strategies for language model text generation, from deterministic",
     "lines": 622,
-    "paper_slug": "nucleus-sampling"
+    "paper_slug": "nucleus-sampling",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "Trains a small model, then compares six decoding strategies: greedy, temperature, top-k, top-p (nucleus), beam search and speculative decoding. The linked card covers nucleus sampling only; the source also cites Leviathan et al. (2023)."
   },
   {
     "tier": "03-systems",
@@ -229,7 +313,10 @@
     "display": "BM25",
     "thesis": "The evolution of text retrieval scoring: from raw term frequency through TF-IDF to BM25,",
     "lines": 618,
-    "paper_slug": "bm25"
+    "paper_slug": "bm25",
+    "teaching_kind": "algorithm_demo",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -237,7 +324,10 @@
     "display": "Activation Checkpointing",
     "thesis": "How to train models twice as deep on the same hardware — trading compute for memory",
     "lines": 484,
-    "paper_slug": "gradient-checkpointing"
+    "paper_slug": "gradient-checkpointing",
+    "teaching_kind": "comparison",
+    "data_source": "in_script",
+    "adaptation_note": "Trains two identically initialized MLPs for the same number of SGD steps, one with standard backpropagation and one with checkpointed recomputation, and compares loss, time, stored activations and gradient equality. It has no separate inference phase."
   },
   {
     "tier": "03-systems",
@@ -245,7 +335,10 @@
     "display": "Complex SSM",
     "thesis": "A complex-valued state space model is mathematically identical to a real-valued one with",
     "lines": 600,
-    "paper_slug": "mamba-2"
+    "paper_slug": "mamba-2",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": "Teaches the complex-to-real (data-dependent RoPE) SSM equivalence. The source cites Mamba-3 (arXiv:2603.15569) Proposition 3 and RoPE (Su et al., 2021); the linked Mamba-2 card's structured state space duality is not implemented."
   },
   {
     "tier": "03-systems",
@@ -253,7 +346,10 @@
     "display": "Discretization",
     "thesis": "The choice of discretization method changes what a recurrence can learn — Euler, ZOH,",
     "lines": 625,
-    "paper_slug": "mamba-2"
+    "paper_slug": "mamba-2",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": "Compares Euler, zero-order-hold and trapezoidal discretization. The source cites Mamba-3 (arXiv:2603.15569) Section 3 and S4 (Gu et al., 2022); the linked Mamba-2 card's structured state space duality is not implemented."
   },
   {
     "tier": "03-systems",
@@ -261,7 +357,10 @@
     "display": "Flash Attention",
     "thesis": "Flash Attention computes exact attention identical to standard attention, but processes",
     "lines": 358,
-    "paper_slug": "flash-attention"
+    "paper_slug": "flash-attention",
+    "teaching_kind": "forward_pass",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -269,7 +368,10 @@
     "display": "KV-Cache",
     "thesis": "Why autoregressive generation recomputes redundant work at every step, and how the KV cache",
     "lines": 476,
-    "paper_slug": "kv-cache"
+    "paper_slug": "kv-cache",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -277,7 +379,10 @@
     "display": "PagedAttention",
     "thesis": "How vLLM serves thousands of concurrent requests -- paged memory allocation for KV-caches",
     "lines": 502,
-    "paper_slug": "pagedattention"
+    "paper_slug": "pagedattention",
+    "teaching_kind": "forward_pass",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -285,7 +390,10 @@
     "display": "Model Parallelism",
     "thesis": "How models that exceed single-device memory get distributed — tensor parallelism, pipeline",
     "lines": 490,
-    "paper_slug": "megatron-lm"
+    "paper_slug": "megatron-lm",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -293,7 +401,10 @@
     "display": "Quantization",
     "thesis": "How to shrink a model by 4x with minimal quality loss -- the math behind INT8 and INT4",
     "lines": 588,
-    "paper_slug": "llm-int8"
+    "paper_slug": "llm-int8",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -301,7 +412,10 @@
     "display": "Roofline Model",
     "thesis": "A state update running 100x more FLOPs can be faster on real hardware if it shifts from",
     "lines": 834,
-    "paper_slug": "roofline"
+    "paper_slug": "roofline",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -309,7 +423,10 @@
     "display": "RoPE",
     "thesis": "How position information gets baked into attention through rotation matrices — why RoPE",
     "lines": 325,
-    "paper_slug": "rope"
+    "paper_slug": "rope",
+    "teaching_kind": "forward_pass",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -317,7 +434,10 @@
     "display": "Speculative Decoding",
     "thesis": "Speculative decoding from first principles: a small draft model proposes tokens that a",
     "lines": 798,
-    "paper_slug": "speculative-decoding"
+    "paper_slug": "speculative-decoding",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -325,7 +445,10 @@
     "display": "State Space Models",
     "thesis": "The alternative to attention -- how state space models process sequences in linear time",
     "lines": 510,
-    "paper_slug": "mamba-2"
+    "paper_slug": "mamba-2",
+    "teaching_kind": "train_infer",
+    "data_source": "names_download",
+    "adaptation_note": "The source cites Mamba (Gu & Dao, 2023) and builds a simplified Mamba-style selective SSM with Euler discretization. The linked Mamba-2 card's structured state space duality is not implemented."
   },
   {
     "tier": "03-systems",
@@ -333,7 +456,10 @@
     "display": "Turboquant",
     "thesis": "Why rotating a vector before quantizing it works -- random rotation makes coordinates",
     "lines": 351,
-    "paper_slug": "turboquant"
+    "paper_slug": "turboquant",
+    "teaching_kind": "algorithm_demo",
+    "data_source": "names_download",
+    "adaptation_note": null
   },
   {
     "tier": "03-systems",
@@ -341,7 +467,10 @@
     "display": "Vector Search",
     "thesis": "Vector search from first principles: exact brute-force nearest neighbors vs approximate",
     "lines": 472,
-    "paper_slug": "hnsw"
+    "paper_slug": "hnsw",
+    "teaching_kind": "algorithm_demo",
+    "data_source": "in_script",
+    "adaptation_note": "Implements exact brute-force search and random-hyperplane locality-sensitive hashing; the source cites Indyk & Motwani (1998) and Charikar (2002). It does not implement the HNSW graph index of the linked card."
   },
   {
     "tier": "04-agents",
@@ -349,7 +478,10 @@
     "display": "Multi-Armed Bandit",
     "thesis": "Multi-armed bandits from first principles: three strategies — Epsilon-Greedy, UCB1, and",
     "lines": 574,
-    "paper_slug": "ucb1"
+    "paper_slug": "ucb1",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "04-agents",
@@ -357,7 +489,10 @@
     "display": "Monte Carlo Tree Search",
     "thesis": "Monte Carlo Tree Search from first principles: the algorithm behind AlphaGo's game play —",
     "lines": 522,
-    "paper_slug": "uct"
+    "paper_slug": "uct",
+    "teaching_kind": "algorithm_demo",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "04-agents",
@@ -365,7 +500,10 @@
     "display": "Memory-Augmented Network",
     "thesis": "Memory-augmented neural networks from first principles: a Neural Turing Machine learns to",
     "lines": 930,
-    "paper_slug": "ntm"
+    "paper_slug": "ntm",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "04-agents",
@@ -373,7 +511,10 @@
     "display": "Minimax + Alpha-Beta",
     "thesis": "Adversarial search from first principles: minimax with alpha-beta pruning learns to play",
     "lines": 830,
-    "paper_slug": "alpha-beta"
+    "paper_slug": "alpha-beta",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   },
   {
     "tier": "04-agents",
@@ -381,6 +522,9 @@
     "display": "ReAct",
     "thesis": "The ReAct reasoning loop from first principles: Thought -> Action -> Observation as a",
     "lines": 893,
-    "paper_slug": "react"
+    "paper_slug": "react",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": null
   }
 ]
