@@ -210,9 +210,11 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
     "microbeam": TeachingContract(
         "train_infer",
         "names_download",
-        "Trains a small model, then compares six decoding strategies: greedy, temperature, "
-        "top-k, top-p (nucleus), beam search and speculative decoding. The linked card "
-        "covers nucleus sampling only; the source also cites Leviathan et al. (2023).",
+        "Trains a target model (16-dimensional embeddings) and a smaller draft model "
+        "(8-dimensional) used only as the speculative-decoding auxiliary, then compares six "
+        "decoding strategies: greedy, temperature, top-k, top-p (nucleus), beam search and "
+        "speculative decoding. The linked card covers nucleus sampling only; the source "
+        "also cites Leviathan et al. (2023).",
     ),
     "microbert": TeachingContract("train_infer", "names_download"),
     "microbm25": TeachingContract("algorithm_demo", "in_script"),

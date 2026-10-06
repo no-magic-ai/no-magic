@@ -305,7 +305,7 @@
     "paper_slug": "nucleus-sampling",
     "teaching_kind": "train_infer",
     "data_source": "names_download",
-    "adaptation_note": "Trains a small model, then compares six decoding strategies: greedy, temperature, top-k, top-p (nucleus), beam search and speculative decoding. The linked card covers nucleus sampling only; the source also cites Leviathan et al. (2023)."
+    "adaptation_note": "Trains a target model (16-dimensional embeddings) and a smaller draft model (8-dimensional) used only as the speculative-decoding auxiliary, then compares six decoding strategies: greedy, temperature, top-k, top-p (nucleus), beam search and speculative decoding. The linked card covers nucleus sampling only; the source also cites Leviathan et al. (2023)."
   },
   {
     "tier": "03-systems",
