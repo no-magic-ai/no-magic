@@ -90,19 +90,34 @@ def filter_by_section(
 def filter_by_names(
     all_scripts: dict[str, list[Path]], names: list[str]
 ) -> dict[str, list[Path]]:
-    lookup: dict[str, tuple[str, Path]] = {}
+    matches: dict[str, list[tuple[str, Path]]] = {}
     for section, paths in all_scripts.items():
         for p in paths:
-            lookup[p.name] = (section, p)
+            matches.setdefault(p.name, []).append((section, p))
 
-    unrecognized = [n for n in names if n not in lookup]
+    unrecognized = [n for n in names if n not in matches]
     if unrecognized:
         print(
             f"Error: unrecognized script(s): {', '.join(unrecognized)}",
             file=sys.stderr,
         )
-        print(f"Available: {', '.join(sorted(lookup.keys()))}", file=sys.stderr)
+        print(f"Available: {', '.join(sorted(matches.keys()))}", file=sys.stderr)
         sys.exit(1)
+
+    # A bare filename present in more than one tier names no single script;
+    # refuse it rather than silently running whichever tier was found last.
+    ambiguous = [n for n in names if len(matches[n]) > 1]
+    if ambiguous:
+        for name in ambiguous:
+            locations = ", ".join(
+                str(p.relative_to(REPO_ROOT)) for _, p in matches[name]
+            )
+            print(
+                f"Error: script name {name!r} is ambiguous: {locations}",
+                file=sys.stderr,
+            )
+        sys.exit(1)
+    lookup = {name: found[0] for name, found in matches.items()}
 
     result: dict[str, list[Path]] = {}
     for name in names:
