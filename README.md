@@ -514,9 +514,9 @@ Karpathy proved that there's enormous demand for "the algorithm, naked." `no-mag
 
 ## How This Was Built
 
-In the spirit of transparency: this repository was co-authored with Claude (Anthropic). I designed the project — which algorithms to include, the four-tier structure, the constraint system, the learning paths, and how each script should be organized — then directed the implementations and verified that every script trains and infers correctly end-to-end on CPU.
+In the spirit of transparency: this repository was co-authored with an AI assistant. I designed the project — which algorithms to include, the four-tier structure, the constraint system, the learning paths, and how each script should be organized — then directed the implementations and verified that every script trains and infers correctly end-to-end on CPU.
 
-The scope goes beyond code. The animated visualizations (Manim scenes), predict-the-behavior challenges, Anki flashcards, learning path tracks, EPUB generation pipeline, and translation infrastructure were all designed collaboratively — I set the requirements and structure, Claude helped execute. Every artifact was reviewed and validated.
+The scope goes beyond code. The animated visualizations (Manim scenes), predict-the-behavior challenges, Anki flashcards, learning path tracks, EPUB generation pipeline, and translation infrastructure were all designed collaboratively — I set the requirements and structure, an AI assistant helped execute. Every artifact was reviewed and validated.
 
 I'm not claiming to have hand-typed every algorithm from scratch. The value of this project is in the curation, the architectural decisions, and the fact that everything works as a self-contained learning resource — from the scripts themselves to the supporting materials that help you internalize what they teach.
 
