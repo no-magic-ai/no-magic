@@ -50,7 +50,7 @@ We welcome PRs that improve existing scripts in the following ways:
 - "Improved" versions that add complexity without proportional clarity.
 - Refactors that extract shared utilities into common modules — each script stands alone.
 - Notebooks, blog posts, or unsolicited documentation-only PRs. Issue-approved supporting-artifact, tooling and contribution-policy maintenance follows the scoped process below.
-- Scripts that skip training without an explicitly recorded and reviewed `comparison`, `forward_pass` or `algorithm_demo` teaching kind (existing examples: `microcheckpoint.py`, `microattention.py`, `microbm25.py`).
+- Scripts that do not complete the full train-plus-infer lifecycle unless the exception is an explicitly recorded and reviewed teaching kind: `comparison` scripts train matched arms side by side but may stop at the comparison rather than running inference (e.g. `microcheckpoint.py`); `forward_pass` scripts run untrained forward computations (e.g. `microattention.py`); `algorithm_demo` scripts run a non-learning algorithm (e.g. `microbm25.py`). Only the last two skip training.
 
 ---
 
