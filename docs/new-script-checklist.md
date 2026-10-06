@@ -141,7 +141,7 @@ Every item here must be completed before merging a new algorithm script. The 04-
 
 - [ ] `python scripts/verify.py` passes for the full suite (not just the new script)
 - [ ] `python scripts/generate_catalog.py --check` exits 0
-- [ ] `git diff main -- '*.py'` shows changes only in the new script file
+- [ ] `git diff main -- '*.py'` shows only the new script file plus its `SCRIPT_TO_PAPER`, `SCRIPT_CONTRACTS` and optional `DISPLAY_OVERRIDES` entries in `scripts/generate_catalog.py` — no changes to other scripts, no incidental restyling of tooling and no new test files or directories
 - [ ] Algorithm count badge matches `ls 01-foundations/*.py 02-alignment/*.py 03-systems/*.py 04-agents/*.py | wc -l`
 - [ ] Tier script count in the README `<summary>` tag matches `ls <tier>/*.py | wc -l`
 - [ ] Flashcard count in README matches `wc -l resources/flashcards/*.csv` (subtract header rows)

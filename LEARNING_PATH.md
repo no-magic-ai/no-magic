@@ -431,7 +431,7 @@ How autonomous agents find good decisions and reason step-by-step. This track co
 - [ ] Completed
 
 **2. `04-agents/microreact.py`**
-- **You'll learn:** How the Thought→Action→Observation loop interleaves language model reasoning with tool calls, grounding each reasoning step in actual observations rather than generating all reasoning upfront.
+- **You'll learn:** How a Thought→Action→Observation loop interleaves decisions with tool calls, grounding each step in actual observations rather than planning everything upfront. Here a learned policy selects each lookup or compute action over toy in-script tools, and each Thought line is a template describing the selected action; no language model generates the reasoning.
 - **Builds on:** `microreinforce` (REINFORCE is used to train the agent's action policy). The policy is a small two-layer MLP over an encoded state, not a language model.
 - **Key moment:** The action masking step — the agent's output distribution is zeroed out over illegal or contextually irrelevant actions before sampling, preventing the policy from exploring nonsensical branches and dramatically stabilizing training.
 - **Time:** 90 min
