@@ -52,7 +52,7 @@
     "paper_slug": "word2vec",
     "teaching_kind": "train_infer",
     "data_source": "names_download",
-    "adaptation_note": null
+    "adaptation_note": "Learns name embeddings by projecting character n-gram counts through one linear layer trained with an InfoNCE contrastive loss; the source says it is inspired by SimCLR and sentence-transformers. It does not implement the CBOW or skip-gram word models of the linked word2vec card."
   },
   {
     "tier": "01-foundations",
@@ -415,7 +415,7 @@
     "paper_slug": "roofline",
     "teaching_kind": "comparison",
     "data_source": "in_script",
-    "adaptation_note": null
+    "adaptation_note": "Trains SISO and rank-4 MIMO SSMs on dual-sine next-value prediction and compares them, alongside pure-Python operation timings placed on an ASCII roofline plot for this CPU. The source cites Mamba-3 (arXiv:2603.15569) for the MIMO state update and Williams et al. (2009) for the roofline model, which is a hardware performance framework rather than an SSM method. The timings are illustrative, not GPU benchmarks."
   },
   {
     "tier": "03-systems",
@@ -514,7 +514,7 @@
     "paper_slug": "alpha-beta",
     "teaching_kind": "train_infer",
     "data_source": "in_script",
-    "adaptation_note": "Trains a small MLP to score Connect Four positions from random-play game outcomes, then uses it as the leaf evaluator of depth-limited minimax with alpha-beta pruning and iterative deepening. The source cites Knuth & Moore (1975) and Shannon (1950); their analysis concerns search and pruning given position values, not this learned evaluator."
+    "adaptation_note": "Trains a small MLP on outcome labels from random-play games of 6x7 Connect Four and uses it as the leaf evaluator of depth-limited minimax with alpha-beta pruning and iterative deepening. The source cites Knuth & Moore (1975), which analyses alpha-beta pruning over given position values, and Shannon (1950), which proposes depth-limited minimax over a hand-crafted position evaluator. Learning the evaluator from game outcomes is this script's addition, not a method from either source."
   },
   {
     "tier": "04-agents",
@@ -525,6 +525,6 @@
     "paper_slug": "react",
     "teaching_kind": "train_infer",
     "data_source": "in_script",
-    "adaptation_note": null
+    "adaptation_note": "A two-layer MLP policy over an encoded state, trained with REINFORCE, chooses lookup and compute actions over an in-script knowledge base and toy tools; each Thought line is a template derived from the chosen action. The linked ReAct paper (Yao et al., arXiv 2022, ICLR 2023) has a large language model generate free-text reasoning traces and actions; this script has no language model."
   }
 ]

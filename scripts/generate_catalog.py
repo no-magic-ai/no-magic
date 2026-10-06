@@ -241,7 +241,14 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
     ),
     "microdpo": TeachingContract("train_infer", "names_download"),
     "microdropout": TeachingContract("comparison", "names_download"),
-    "microembedding": TeachingContract("train_infer", "names_download"),
+    "microembedding": TeachingContract(
+        "train_infer",
+        "names_download",
+        "Learns name embeddings by projecting character n-gram counts through one "
+        "linear layer trained with an InfoNCE contrastive loss; the source says it is "
+        "inspired by SimCLR and sentence-transformers. It does not implement the CBOW "
+        "or skip-gram word models of the linked word2vec card."
+    ),
     "microflash": TeachingContract("forward_pass", "in_script"),
     "microgan": TeachingContract("train_infer", "in_script"),
     "microgpt": TeachingContract(
@@ -275,11 +282,13 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
     "microminimax": TeachingContract(
         "train_infer",
         "in_script",
-        "Trains a small MLP to score Connect Four positions from random-play game "
-        "outcomes, then uses it as the leaf evaluator of depth-limited minimax with "
+        "Trains a small MLP on outcome labels from random-play games of 6x7 Connect "
+        "Four and uses it as the leaf evaluator of depth-limited minimax with "
         "alpha-beta pruning and iterative deepening. The source cites Knuth & Moore "
-        "(1975) and Shannon (1950); their analysis concerns search and pruning given "
-        "position values, not this learned evaluator.",
+        "(1975), which analyses alpha-beta pruning over given position values, and "
+        "Shannon (1950), which proposes depth-limited minimax over a hand-crafted "
+        "position evaluator. Learning the evaluator from game outcomes is this script's "
+        "addition, not a method from either source."
     ),
     "micromoe": TeachingContract(
         "train_infer",
@@ -314,7 +323,16 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
     ),
     "microquant": TeachingContract("train_infer", "names_download"),
     "microrag": TeachingContract("train_infer", "in_script"),
-    "microreact": TeachingContract("train_infer", "in_script"),
+    "microreact": TeachingContract(
+        "train_infer",
+        "in_script",
+        "A two-layer MLP policy over an encoded state, trained with REINFORCE, chooses "
+        "lookup and compute actions over an in-script knowledge base and toy tools; "
+        "each Thought line is a template derived from the chosen action. The linked "
+        "ReAct paper (Yao et al., arXiv 2022, ICLR 2023) has a large language model "
+        "generate free-text reasoning traces and actions; this script has no language "
+        "model."
+    ),
     "microreinforce": TeachingContract("comparison", "in_script"),
     "microresnet": TeachingContract("comparison", "in_script"),
     "micrornn": TeachingContract(
@@ -324,7 +342,16 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "for the vanilla RNN and Cho et al. (2014) for the GRU; the linked card is "
         "Elman (1990).",
     ),
-    "microroofline": TeachingContract("comparison", "in_script"),
+    "microroofline": TeachingContract(
+        "comparison",
+        "in_script",
+        "Trains SISO and rank-4 MIMO SSMs on dual-sine next-value prediction and "
+        "compares them, alongside pure-Python operation timings placed on an ASCII "
+        "roofline plot for this CPU. The source cites Mamba-3 (arXiv:2603.15569) for "
+        "the MIMO state update and Williams et al. (2009) for the roofline model, which "
+        "is a hardware performance framework rather than an SSM method. The timings are "
+        "illustrative, not GPU benchmarks."
+    ),
     "microrope": TeachingContract("forward_pass", "in_script"),
     "microspeculative": TeachingContract("train_infer", "names_download"),
     "microssm": TeachingContract(
