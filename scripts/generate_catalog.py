@@ -187,8 +187,9 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
     "adam_vs_sgd": TeachingContract(
         "comparison",
         "names_download",
-        "Trains the same character bigram model with Adam and with SGD on identical data. "
-        "The source also cites Robbins & Monro (1951) for SGD; the linked card covers Adam.",
+        "Trains the same character bigram model with Adam and with SGD with momentum (0.9) "
+        "on identical data. The source also cites Robbins & Monro (1951) for SGD; the "
+        "linked card covers Adam.",
     ),
     "attention_vs_none": TeachingContract(
         "comparison",

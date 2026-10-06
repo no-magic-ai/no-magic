@@ -184,7 +184,7 @@
     "paper_slug": "adam",
     "teaching_kind": "comparison",
     "data_source": "names_download",
-    "adaptation_note": "Trains the same character bigram model with Adam and with SGD on identical data. The source also cites Robbins & Monro (1951) for SGD; the linked card covers Adam."
+    "adaptation_note": "Trains the same character bigram model with Adam and with SGD with momentum (0.9) on identical data. The source also cites Robbins & Monro (1951) for SGD; the linked card covers Adam."
   },
   {
     "tier": "02-alignment",
