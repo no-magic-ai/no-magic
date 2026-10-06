@@ -4,10 +4,11 @@ Methods for steering, fine-tuning, and aligning models after pretraining. These 
 
 ## Scripts
 
-Measured on Apple M-series, Python 3.12. Times are wall-clock.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 10 programs in this tier: 9 `micro*` programs and the unprefixed comparison `adam_vs_sgd.py`.
 
 | Script              | Algorithm                                                             | Time   | Status | Video                                             |
 | ------------------- | --------------------------------------------------------------------- | ------ | ------ | ------------------------------------------------- |
+| `adam_vs_sgd.py`    | Adam vs. SGD with momentum on the same character bigram model (trained comparison) | _unmeasured_ | not recorded | no preview |
 | `microbatchnorm.py` | Batch Normalization — internal covariate shift and running statistics | 0m 34s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbatchnorm.gif) |
 | `microdpo.py`       | Direct Preference Optimization                                        | 2m 42s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdpo.gif)       |
 | `microdropout.py`   | Dropout, weight decay, and early stopping as regularization           | 3m 21s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdropout.gif)   |
