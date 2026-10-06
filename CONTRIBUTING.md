@@ -12,7 +12,7 @@ These are not guidelines. They are hard requirements. PRs that violate any of th
 |---|---|
 | **One file** | Every script is a single `.py` file. No local imports, no `utils.py`, no companion files. |
 | **Zero dependencies** | Python standard library only. If it needs `pip install`, it doesn't belong here. Allowed modules: `os`, `math`, `random`, `json`, `struct`, `urllib`, `collections`, `itertools`, `functools`, `string`, `hashlib`, `time`. |
-| **Trains and infers** | By default a script includes both the complete learning loop and inference/generation, so the reader sees the full lifecycle (`train_infer`). The only exceptions are the explicitly recorded teaching kinds in `scripts/generate_catalog.py`: `comparison` (matched arms trained side by side), `forward_pass` (untrained forward computations of a mechanism) and `algorithm_demo` (a non-learning algorithm). An exception must be justified in the issue and reviewed; it is never inferred from the filename. |
+| **Trains and infers** | By default a script includes both the complete learning loop and inference/generation, so the reader sees the full lifecycle (`train_infer`). Every script's teaching kind is recorded explicitly in `scripts/generate_catalog.py`, never inferred from the filename. `comparison` (two or more alternative arms trained on a common task and compared; checked first, and it may also run inference) is the other lifecycle that trains. `forward_pass` (untrained forward computations of a mechanism) and `algorithm_demo` (a non-learning algorithm) are the only kinds without training, and must be justified in the issue and reviewed. |
 | **Runs in minutes** | Under **7 minutes on M-series Mac** or **10 minutes on 2019-era Intel i5**. No GPU required. |
 | **Self-contained data** | Data is either generated or embedded in the script (`in_script`) or downloaded by the script itself via `urllib` on first run and cached locally (`names_download` today: makemore `names.txt`, cached in the working directory). No manual download steps. Max 5MB. Record the source in the script's catalog contract. |
 | **Reproducible** | `random.seed(42)` at the top of every script. Same input, same output. |
@@ -50,7 +50,7 @@ We welcome PRs that improve existing scripts in the following ways:
 - "Improved" versions that add complexity without proportional clarity.
 - Refactors that extract shared utilities into common modules — each script stands alone.
 - Notebooks, blog posts, or unsolicited documentation-only PRs. Issue-approved supporting-artifact, tooling and contribution-policy maintenance follows the scoped process below.
-- Scripts that do not complete the full train-plus-infer lifecycle unless the exception is an explicitly recorded and reviewed teaching kind: `comparison` scripts train matched arms side by side but may stop at the comparison rather than running inference (e.g. `microcheckpoint.py`); `forward_pass` scripts run untrained forward computations (e.g. `microattention.py`); `algorithm_demo` scripts run a non-learning algorithm (e.g. `microbm25.py`). Only the last two skip training.
+- Scripts that do not complete a full training lifecycle unless their explicitly recorded and reviewed teaching kind says otherwise. A `train_infer` script trains one model and uses it for inference. A `comparison` script trains alternative arms and compares them; most also run inference, but some stop at the comparison (e.g. `microcheckpoint.py`). Only `forward_pass` scripts (untrained forward computations, e.g. `microattention.py`) and `algorithm_demo` scripts (non-learning algorithms, e.g. `microbm25.py`) skip training.
 
 ---
 
@@ -284,7 +284,7 @@ Before submitting, verify every item:
 - [ ] `random.seed(42)` at the top
 - [ ] Completes in under 7 minutes on M-series Mac (or 10 minutes on 2019 Intel i5)
 - [ ] Prints training progress (step number, loss) — `train_infer` and `comparison` scripts
-- [ ] Prints inference results demonstrating the trained model — `train_infer` scripts
+- [ ] Prints inference results demonstrating the trained model — `train_infer` scripts, and `comparison` scripts whose arms run inference
 - [ ] Catalog records added and `python scripts/generate_catalog.py --check` passes
 - [ ] Meets the success criteria defined in `docs/implementation.md` for this script
 

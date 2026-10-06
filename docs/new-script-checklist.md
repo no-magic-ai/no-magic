@@ -8,7 +8,7 @@ Every item here must be completed before merging a new algorithm script. The 04-
 
 - [ ] Open a GitHub issue describing the algorithm, what it teaches, and why it belongs here
 - [ ] Confirm the algorithm is not already implemented (search `01-foundations/`, `02-alignment/`, `03-systems/`, `04-agents/`)
-- [ ] Confirm the algorithm can train and infer on CPU in under 10 minutes, or justify in the issue a `comparison`, `forward_pass` or `algorithm_demo` teaching kind
+- [ ] Confirm the algorithm can train and infer on CPU in under 10 minutes, or train and compare alternative arms (`comparison`); justify a `forward_pass` or `algorithm_demo` teaching kind in the issue
 - [ ] Confirm the data can be generated in the script or downloaded by it within the 5MB constraint
 - [ ] Confirm the script can be a single `.py` file with zero external imports
 - [ ] Identify the correct tier and place it in `docs/implementation.md` under the appropriate phase
@@ -45,7 +45,7 @@ Every item here must be completed before merging a new algorithm script. The 04-
 - [ ] Confirm runtime is under 10 minutes on a laptop CPU (M-series Mac target: under 7 minutes)
 - [ ] Run `python scripts/verify.py <tier>/micro<name>.py` and confirm it passes
 - [ ] Run twice and confirm `random.seed(42)` produces identical output both times
-- [ ] Confirm the script does what its recorded teaching kind says: `train_infer` trains and then performs inference; `comparison`, `forward_pass` and `algorithm_demo` are reviewed exceptions, never defaults
+- [ ] Confirm the script does what its recorded teaching kind says, checking `comparison` first: `comparison` trains two or more alternative arms on a common task and compares them (inference may follow); `train_infer` trains one model, possibly with decoding or serving auxiliaries, and then performs inference; `forward_pass` and `algorithm_demo` are reviewed exceptions without training
 
 ---
 
