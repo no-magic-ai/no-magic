@@ -4,7 +4,7 @@ Core algorithms that form the building blocks of modern AI systems. These are th
 
 ## Scripts
 
-Measured on Apple M-series, Python 3.12. Times are wall-clock.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json).
 
 | Script              | Algorithm                                                                 | Time    | Status | Video                                             |
 | ------------------- | ------------------------------------------------------------------------- | ------- | ------ | ------------------------------------------------- |
@@ -14,20 +14,24 @@ Measured on Apple M-series, Python 3.12. Times are wall-clock.
 | `microembedding.py` | Contrastive embedding learning (InfoNCE)                                  | 0m 44s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microembedding.gif) |
 | `microgan.py`       | Generative Adversarial Network — generator vs. discriminator minimax game | 2m 02s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microgan.gif)       |
 | `microgpt.py`       | Autoregressive language model (GPT) with scalar autograd                  | 1m 41s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microgpt.gif)       |
+| `microlstm.py`      | LSTM — four-gate recurrent cell trained on character-level names          | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microlstm.gif)      |
 | `microoptimizer.py` | Optimizer comparison — SGD vs. Momentum vs. RMSProp vs. Adam              | 0m 34s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microoptimizer.gif) |
 | `microrag.py`       | Retrieval-Augmented Generation (BM25 + MLP)                               | 12m 30s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrag.gif)       |
+| `microresnet.py`    | Plain vs. residual network — skip connections and gradient flow (trained comparison) | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microresnet.gif)    |
 | `micrornn.py`       | Vanilla RNN vs. GRU — vanishing gradients and gating                      | 18m 30s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/micrornn.gif)       |
 | `microtokenizer.py` | Byte-Pair Encoding (BPE) tokenization                                     | 0m 12s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microtokenizer.gif) |
 | `microvae.py`       | Variational Autoencoder with reparameterization trick                     | 1m 31s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microvae.gif)       |
+| `microvit.py`       | Vision Transformer — image patches as tokens, classifying synthetic images | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microvit.gif)       |
+
+The tier also contains two comparison programs without previews, `attention_vs_none.py` and `rnn_vs_gru_vs_lstm.py`.
 
 ## Future Candidates
 
-These algorithms are strong candidates for future addition. Each would need to meet the project constraints (single file, zero dependencies, trains and infers, under 10 minutes on CPU).
+These algorithms are strong candidates for future addition. Each would need to meet the project constraints (single file, zero dependencies, a recorded teaching kind — normally train and infer — and under 10 minutes on CPU).
 
 | Algorithm    | What It Would Teach                                 | Notes                                                          |
 | ------------ | --------------------------------------------------- | -------------------------------------------------------------- |
-| **LSTM**     | Long Short-Term Memory gating (3 gates vs. GRU's 2) | Could extend micrornn.py or be standalone                      |
-| **Word2Vec** | Skip-gram with negative sampling                    | Classic embedding algorithm, simpler than contrastive learning |
+| **Word2Vec** | Skip-gram with negative sampling                    | Not yet implemented. `microembedding.py` links to the word2vec paper card but trains a contrastive character n-gram model; a skip-gram or CBOW implementation would be new |
 
 ## Learning Path
 

@@ -4,24 +4,27 @@ The engineering that makes models fast, small, and deployable. These scripts dem
 
 ## Scripts
 
-Measured on Apple M-series, Python 3.12. Times are wall-clock.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json).
 
 | Script               | Algorithm                                                         | Time   | Status | Video                                              |
 | -------------------- | ----------------------------------------------------------------- | ------ | ------ | -------------------------------------------------- |
 | `microattention.py`  | Attention variants compendium (MHA, GQA, MQA, sliding window)     | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microattention.gif)  |
+| `microbm25.py`       | Retrieval scoring — term frequency → TF-IDF → BM25 (non-learning) | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbm25.gif)       |
 | `microbeam.py`       | Decoding strategies (greedy, top-k, top-p, beam, speculative)     | 1m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbeam.gif)       |
 | `microcheckpoint.py` | Activation/gradient checkpointing — trading compute for memory    | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcheckpoint.gif) |
 | `microflash.py`      | Flash Attention algorithmic simulation (tiling, online softmax)   | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microflash.gif)      |
 | `microkv.py`         | KV-cache mechanics (with vs. without, paged attention)            | 0m 33s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microkv.gif)         |
 | `micropaged.py`      | PagedAttention — vLLM-style paged KV-cache memory management      | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/micropaged.gif)      |
-| `microparallel.py`   | Tensor and pipeline parallelism — distributed model inference     | 0m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microparallel.gif)   |
+| `microparallel.py`   | Tensor and pipeline parallelism — simulated parallel training of a 4-layer MLP, compared with single-device training | 0m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microparallel.gif)   |
 | `microquant.py`      | Weight quantization (INT8, INT4, per-channel vs. per-tensor)      | 1m 22s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microquant.gif)      |
 | `microturboquant.py` | Data-oblivious vector quantization via random rotation + QJL      | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microturboquant.gif) |
 | `microrope.py`       | Rotary Position Embedding (RoPE) — position via rotation matrices | < 1s   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrope.gif)       |
+| `microspeculative.py` | Speculative decoding — trained draft model proposes, trained verifier accepts or rejects | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microspeculative.gif) |
 | `microssm.py`        | State Space Models (Mamba-style) — linear-time sequence modeling  | 0m 34s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microssm.gif)        |
 | `microcomplexssm.py` | Complex SSM equivalence — complex eigenvalues = real + RoPE       | < 1m   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcomplexssm.gif) |
 | `microdiscretize.py`  | Discretization methods — Euler, ZOH, Trapezoidal comparison       | < 1m   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdiscretize.gif) |
 | `microroofline.py`   | Roofline model — SISO vs MIMO hardware utilization                | < 1m   | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microroofline.gif)   |
+| `microvectorsearch.py` | Exact brute-force vs. LSH approximate nearest-neighbour search (non-learning) | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microvectorsearch.gif) |
 
 ### Teaching Kinds
 
