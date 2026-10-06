@@ -12,9 +12,9 @@ These are not guidelines. They are hard requirements. PRs that violate any of th
 |---|---|
 | **One file** | Every script is a single `.py` file. No local imports, no `utils.py`, no companion files. |
 | **Zero dependencies** | Python standard library only. If it needs `pip install`, it doesn't belong here. Allowed modules: `os`, `math`, `random`, `json`, `struct`, `urllib`, `collections`, `itertools`, `functools`, `string`, `hashlib`, `time`. |
-| **Trains and infers** | Every script includes both the complete learning loop and inference/generation. The reader sees the full lifecycle. |
+| **Trains and infers** | By default a script includes both the complete learning loop and inference/generation, so the reader sees the full lifecycle (`train_infer`). The only exceptions are the explicitly recorded teaching kinds in `scripts/generate_catalog.py`: `comparison` (matched arms trained side by side), `forward_pass` (untrained forward computations of a mechanism) and `algorithm_demo` (a non-learning algorithm). An exception must be justified in the issue and reviewed; it is never inferred from the filename. |
 | **Runs in minutes** | Under **7 minutes on M-series Mac** or **10 minutes on 2019-era Intel i5**. No GPU required. |
-| **Self-contained data** | Datasets are auto-downloaded on first run via `urllib` and cached locally. No manual download steps. Max 5MB. |
+| **Self-contained data** | Data is either generated or embedded in the script (`in_script`) or downloaded by the script itself via `urllib` on first run and cached locally (`names_download` today: makemore `names.txt`, cached in the working directory). No manual download steps. Max 5MB. Record the source in the script's catalog contract. |
 | **Reproducible** | `random.seed(42)` at the top of every script. Same input, same output. |
 | **Commented** | Every script must follow the commenting standard described below. This is the single most common reason PRs are rejected. |
 
@@ -50,7 +50,7 @@ We welcome PRs that improve existing scripts in the following ways:
 - "Improved" versions that add complexity without proportional clarity.
 - Refactors that extract shared utilities into common modules — each script stands alone.
 - Notebooks, blog posts, or unsolicited documentation-only PRs. Issue-approved supporting-artifact, tooling and contribution-policy maintenance follows the scoped process below.
-- Scripts that only demonstrate forward passes without training (with the documented exception of comparison scripts like `microattention.py`).
+- Scripts that skip training without an explicitly recorded and reviewed `comparison`, `forward_pass` or `algorithm_demo` teaching kind (existing examples: `microcheckpoint.py`, `microattention.py`, `microbm25.py`).
 
 ---
 
@@ -206,7 +206,8 @@ Target roughly 30-40% of lines as comments or blank lines. This is not a hard me
 
 An algorithm implementation pull request must include:
 
-- **The script file** placed in the correct tier directory (`01-foundations/`, `02-alignment/`, or `03-systems/`).
+- **The script file** placed in the correct tier directory (`01-foundations/`, `02-alignment/`, `03-systems/`, or `04-agents/`).
+- **Catalog records** in `scripts/generate_catalog.py`: a `SCRIPT_TO_PAPER` entry naming the script's paper card slug in `no-magic-papers` and a `SCRIPT_CONTRACTS` entry with its teaching kind, data source and, where the script differs from the card, an adaptation note. Regenerate `docs/catalog.json` and confirm `python scripts/generate_catalog.py --check` passes.
 - **A PR description** that includes:
   - The algorithm name and a one-sentence summary.
   - The dataset used and how it's fetched.
@@ -282,8 +283,9 @@ Before submitting, verify every item:
 - [ ] No imports outside Python standard library
 - [ ] `random.seed(42)` at the top
 - [ ] Completes in under 7 minutes on M-series Mac (or 10 minutes on 2019 Intel i5)
-- [ ] Prints training progress (step number, loss)
-- [ ] Prints inference results demonstrating the trained model
+- [ ] Prints training progress (step number, loss) — `train_infer` and `comparison` scripts
+- [ ] Prints inference results demonstrating the trained model — `train_infer` scripts
+- [ ] Catalog records added and `python scripts/generate_catalog.py --check` passes
 - [ ] Meets the success criteria defined in `docs/implementation.md` for this script
 
 **Autograd & Numerical Stability** (for scripts using scalar autograd)
@@ -311,7 +313,7 @@ Before submitting, verify every item:
 - [ ] No unnecessary complexity or cleverness
 
 **Logistics**
-- [ ] File placed in correct tier directory (`01-foundations/`, `02-alignment/`, or `03-systems/`)
+- [ ] File placed in correct tier directory (`01-foundations/`, `02-alignment/`, `03-systems/`, or `04-agents/`)
 - [ ] PR description includes runtime, line count, and sample output
 - [ ] No files beyond the standalone script and required supporting artifacts
 - [ ] Attribution comments for any referenced papers or implementations

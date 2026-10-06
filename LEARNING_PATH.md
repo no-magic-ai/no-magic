@@ -1,12 +1,12 @@
 # Learning Path
 
-A structured guide through all 44 no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood.
+A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 36 of the 48 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ## How to Use This Guide
 
-1. **Pick a track** that matches your interest or time budget. Tracks 1-2 are weekend-sized. Tracks 3-5 go deeper on specific topics. Track 6 covers everything.
+1. **Pick a track** that matches your interest or time budget. Tracks 1-2 are weekend-sized. Tracks 3-5 go deeper on specific topics. Track 6 is the longest sequence.
 2. **Check off scripts** as you complete them using the `- [ ]` checkboxes.
-3. **Each script runs with zero setup** — just `python <path>`. No virtual environment, no dependencies, no configuration.
+3. **Each script runs without installation** — just `python <path>`. No virtual environment, no dependencies, no configuration. Scripts whose catalog `data_source` is `names_download` fetch makemore's `names.txt` on first run (network needed once; cached as `names.txt` in the directory you run from). Each script's catalog `teaching_kind` says whether it trains and infers, compares trained variants, runs untrained forward computations, or demonstrates a non-learning algorithm.
 4. **Read each script top-to-bottom like a tutorial**, then run it. The comments explain the "why" at every step. After running, experiment: change hyperparameters, swap datasets, break things on purpose.
 5. **Prerequisites matter.** Each step lists what it builds on. If you jump into a track mid-way, check the "Builds on" field and backfill gaps.
 
@@ -19,7 +19,7 @@ A structured guide through all 44 no-magic implementations. Pick a track based o
 | 3. Deep Dive: Modern Inference | Making models fast and small | ~7 hrs |
 | 4. Deep Dive: Generative Models | How models create new data | ~4 hrs |
 | 5. Deep Dive: Retrieval & Search | Connecting models to external knowledge | ~3 hrs |
-| 6. Full Curriculum | All 44 scripts, dependency-ordered | ~22 hrs |
+| 6. Full Curriculum | 36 of the 48 scripts, dependency-ordered | ~22 hrs |
 | 7. Agent Algorithms | Search and reasoning in autonomous agents | ~3 hrs |
 
 ---
@@ -277,7 +277,7 @@ Connecting models to external knowledge. This track covers how to represent text
 
 ## Track 6: Full Curriculum (~22 hrs)
 
-All 44 scripts in dependency-respecting order. Grouped by conceptual cluster with milestone markers.
+36 of the 48 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ### Milestone 1: Text Representation (1.5 hrs)
 
@@ -425,14 +425,20 @@ How autonomous agents find good decisions and reason step-by-step. This track co
 
 **1. `04-agents/micromcts.py`**
 - **You'll learn:** How Monte Carlo Tree Search finds strong moves in combinatorial games without exhaustive enumeration, using the UCB1 formula to balance exploring new branches against exploiting known-good ones.
-- **Builds on:** `microreinforce` (the REINFORCE policy gradient is used to train the rollout policy).
+- **Builds on:** no earlier script is required. `micromcts` uses uniformly random rollouts and trains no policy or value model (catalog kind `algorithm_demo`).
 - **Key moment:** The UCB1 term in action — early in search, barely-visited nodes have huge exploration bonuses and get selected first; as visit counts grow, the exploitation term dominates and the search concentrates on the best subtree.
 - **Time:** 90 min
 - [ ] Completed
 
 **2. `04-agents/microreact.py`**
 - **You'll learn:** How the Thought→Action→Observation loop interleaves language model reasoning with tool calls, grounding each reasoning step in actual observations rather than generating all reasoning upfront.
-- **Builds on:** `microreinforce` (REINFORCE is used to train the agent's action policy), `microgpt` (the language model backbone).
+- **Builds on:** `microreinforce` (REINFORCE is used to train the agent's action policy). The policy is a small two-layer MLP over an encoded state, not a language model.
 - **Key moment:** The action masking step — the agent's output distribution is zeroed out over illegal or contextually irrelevant actions before sampling, preventing the policy from exploring nonsensical branches and dramatically stabilizing training.
 - **Time:** 90 min
 - [ ] Completed
+
+---
+
+## Scripts not yet in a track
+
+These catalog scripts are not yet placed in any track above: `01-foundations/attention_vs_none.py`, `01-foundations/microlstm.py`, `01-foundations/microresnet.py`, `01-foundations/microvit.py`, `01-foundations/rnn_vs_gru_vs_lstm.py`, `02-alignment/adam_vs_sgd.py`, `03-systems/microbm25.py`, `03-systems/microspeculative.py`, `03-systems/microvectorsearch.py`, `04-agents/microbandit.py`, `04-agents/micromemory.py` and `04-agents/microminimax.py`.
