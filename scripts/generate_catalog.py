@@ -460,9 +460,9 @@ def build_catalog() -> list[CatalogEntry]:
     return catalog
 
 
-def render_catalog(catalog: list[CatalogEntry]) -> str:
-    """Serialize the catalog exactly as it is committed."""
-    return json.dumps(catalog, indent=2, ensure_ascii=False) + "\n"
+def render_catalog(catalog: list[CatalogEntry]) -> bytes:
+    """Serialize the catalog to the exact bytes that are committed (UTF-8, LF)."""
+    return (json.dumps(catalog, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
 
 def main() -> int:
@@ -470,14 +470,14 @@ def main() -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="exit 1 if docs/catalog.json differs from the generated output; never writes",
+        help="exit 1 unless docs/catalog.json is byte-identical to the generated output; never writes",
     )
     args = parser.parse_args()
 
     catalog = build_catalog()
     rendered = render_catalog(catalog)
     if args.check:
-        current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.is_file() else None
+        current = OUTPUT.read_bytes() if OUTPUT.is_file() else None
         if current != rendered:
             state = "missing" if current is None else "stale"
             print(
@@ -489,7 +489,7 @@ def main() -> int:
         return 0
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(rendered, encoding="utf-8")
+    OUTPUT.write_bytes(rendered)
     print(f"Generated {OUTPUT} with {len(catalog)} algorithms")
     return 0
 
