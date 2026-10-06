@@ -505,7 +505,6 @@ graph LR
 
   %% --- Foundations / Alignment → Agents ---
   REINF --> REACT
-  GPT --> REACT
 
   %% --- Apply styles ---
   class TOK,EMB,OPT,RNN,CONV,GPT,BERT,RAG,DIFF,VAE,GAN foundations

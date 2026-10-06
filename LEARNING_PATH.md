@@ -419,7 +419,7 @@ How agents search and reason — tree search for planning and tool-augmented rea
 
 How autonomous agents find good decisions and reason step-by-step. This track covers tree search and tool-augmented reasoning — the two mechanisms that let agents plan beyond single forward passes.
 
-**Prerequisites:** Track 1 (transformer architecture and autograd `Value` class) and Track 2 — specifically `02-alignment/microreinforce.py` (REINFORCE policy gradient, which `microreact.py` uses directly for policy training).
+**Prerequisites:** `02-alignment/microreinforce.py` (the REINFORCE policy gradient that `microreact.py` uses to train its two-layer MLP policy, with hand-written gradients). `micromcts.py` needs no earlier script.
 
 ### Steps
 
