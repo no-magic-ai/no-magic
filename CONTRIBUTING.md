@@ -49,7 +49,7 @@ We welcome PRs that improve existing scripts in the following ways:
 - Scripts that wrap or call external libraries (even "lightweight" ones like NumPy).
 - "Improved" versions that add complexity without proportional clarity.
 - Refactors that extract shared utilities into common modules — each script stands alone.
-- Notebooks, blog posts, or documentation-only PRs (open an issue to discuss these).
+- Notebooks, blog posts, or unsolicited documentation-only PRs. Issue-approved supporting-artifact, tooling and contribution-policy maintenance follows the scoped process below.
 - Scripts that only demonstrate forward passes without training (with the documented exception of comparison scripts like `microattention.py`).
 
 ---
@@ -204,7 +204,7 @@ Target roughly 30-40% of lines as comments or blank lines. This is not a hard me
 
 ### PR Requirements
 
-Your pull request must include:
+An algorithm implementation pull request must include:
 
 - **The script file** placed in the correct tier directory (`01-foundations/`, `02-alignment/`, or `03-systems/`).
 - **A PR description** that includes:
@@ -214,12 +214,16 @@ Your pull request must include:
   - The runtime on your machine (CPU model + time).
   - Sample output (copy-paste a few lines of training progress and inference results).
 
-Your pull request must **not** include:
+An algorithm implementation pull request must **not** include:
 
 - Changes to other scripts (unless fixing a cross-cutting bug).
 - New directories outside the established structure.
-- Any file other than the single `.py` script (no READMEs per script, no notebooks, no test files).
-- Changes to `CONTRIBUTING.md` (open an issue to discuss these).
+- Companion learner-code files, per-script READMEs, notebooks or new test files/directories. Each learner program remains one standalone standard-library `.py` file.
+- Unapproved changes to `CONTRIBUTING.md`; open an issue first for a scoped policy clarification.
+
+The one-file rule applies to the learner program, not to the repository's required supporting artifacts. Include the tier/main README, learning-path, challenge and flashcard updates required by [the new-script checklist](docs/new-script-checklist.md), plus regenerated catalog metadata when affected; paper and visualization artifacts remain in their owning repositories. This does not authorize shared algorithm helpers or waive the checklist.
+
+Issue-backed maintenance PRs may update existing repository tooling, generated metadata, supporting artifacts or contribution rules without adding an algorithm script. Extend `scripts/verify.py` for core behavioral checks instead of adding test files/directories. Keep policy clarifications docs-only and independently reviewed and verified before dependent product implementation. These exceptions do not change learner-code dependency, CPU, data, provenance or scientific-correctness requirements.
 
 ### Review Process
 
@@ -230,6 +234,14 @@ Your pull request must **not** include:
 5. **Readability review**: The "one sitting" test. A reviewer will read your script top-to-bottom and note every point where they had to stop and think. If there are too many, you'll be asked to add comments or restructure.
 
 Expect at least one round of revision. This is normal and not a reflection of code quality — it's the nature of writing for an educational audience.
+
+### Scoped enhancement-phase technical merges
+
+For the maintainer-approved enhancement phase recorded in [issue #39](https://github.com/no-magic-ai/no-magic/issues/39), the canonical runner may mechanically merge technical PRs only after a current design approval, separate independent verification, per-PR and coordinated-stack review, and every applicable current-head provider/CI gate. Technical scope is tooling, CI, rendering infrastructure, deterministic metadata/link repairs, source-state corrections and supervised-authoring artifact/control/security plumbing. Both the canonical runner and independent reviewers must classify the actual head/base diff as technical; reclassify and rerun stale gates when either changes.
+
+Algorithm/math behavior changes, newly interpreted research claims, paper cards, lessons, curriculum explanations and exercise-answer changes require actual human current-head content approval. Mixed, ambiguous or disputed classifications are human-gated. Accept only a human-authored provider review/comment or an explicit maintainer approval naming the PR, current head SHA and content scope; AI review, an agent-posted approval or stale approval is not human approval. Provider-required reviewers and branch protections remain binding.
+
+This narrow exception permits gated technical merges, not automatic scientific review, administrative bypass, factory activation, experimental spend, new releases or weakened acceptance/safety gates. No external review bot is solicited. After all actual human and provider gates pass, the canonical runner may perform the mechanical merge without requesting a duplicate approval.
 
 ---
 
@@ -301,7 +313,7 @@ Before submitting, verify every item:
 **Logistics**
 - [ ] File placed in correct tier directory (`01-foundations/`, `02-alignment/`, or `03-systems/`)
 - [ ] PR description includes runtime, line count, and sample output
-- [ ] No extra files included
+- [ ] No files beyond the standalone script and required supporting artifacts
 - [ ] Attribution comments for any referenced papers or implementations
 
 ---
