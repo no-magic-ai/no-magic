@@ -243,7 +243,7 @@ This project follows a strict set of constraints:
 
 - **One file, one algorithm.** Every script is completely self-contained. No imports from local modules, no `utils.py`, no shared libraries.
 - **Zero external dependencies.** Only Python's standard library. If it needs `pip install`, it doesn't belong here.
-- **Train and infer.** Every script includes both the learning loop and generation/prediction. You see the full lifecycle.
+- **A recorded lifecycle.** Most scripts train a model and then use it for inference, and many trained comparisons do too; the exceptions (comparisons that stop at the comparison, untrained forward-pass demonstrations and non-learning algorithms) are recorded per script. See [Script contracts](#script-contracts) and [`docs/catalog.json`](docs/catalog.json).
 - **Runs in minutes on a CPU.** No GPU required. No cloud credits. Every script completes on a laptop in reasonable time.
 - **Comments are mandatory, not decorative.** Every script must be readable as a guided walkthrough of the algorithm. We are not optimizing for line count — we are optimizing for understanding. See `CONTRIBUTING.md` for the full commenting standard.
 
