@@ -32,11 +32,11 @@ Test your understanding of Byte-Pair Encoding by predicting what happens in thes
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** Re-counting would break the guarantee that the same string always produces the same token sequence. Tokenization would become input-batch-dependent, producing different outputs depending on what other text appeared in the same encoding request.
+**Answer:** Re-counting would make the merge order depend on the text being encoded instead of on the order learned in training. The same word could then be split differently depending on what surrounds it, and differently from how training split it, so token IDs would lose a stable meaning. Re-counting alone does not make encoding nondeterministic: `encode` takes one string, and a re-counting encoder would still return the same tokens every time for that same string.
 
-**Why:** The merges were learned on the full training corpus, where pair (a, b) was the most frequent pair at step 0. But on a new input string "aba", pair (a, b) might appear once while some other pair dominates. Re-counting would apply a different merge first, producing a different sequence. Priority-order replay ensures determinism: the same string always maps to the same token IDs, which is required for a tokenizer to be a consistent preprocessing step. The comment on lines 148-153 explains this directly: "Priority order ensures deterministic tokenization."
+**Why:** The merges were learned on the full training corpus, where pair (a, b) was the most frequent pair at step 0. On a new input string, pair (a, b) might appear once while some other pair dominates, so re-counting would merge that other pair first and could leave "ab" unmerged even though training always merged it first. Replaying the learned list applies the same merges in the same order to every input, so a word's tokens depend only on the word's bytes and the training run. For example, train three merges on `"ab ab ab ab cd cd ab cd"` (the first is `(a, b)`) and encode `"ab bbbbbb"`: replay applies `(a, b)` first, as training did, while a re-counting encoder with three merges picks `(b, b)`, then `(bb, bb)`, and merges `a b` only third; both encoders return identical output when run twice on the same string. The docstring on lines 148-153 justifies the design by determinism ("the same string always produces the same token sequence") and by "input batch" dependence; that rationale is incorrect, because re-counting a single string is also deterministic and `encode(text, merges)` has no batch. The behaviour it documents, replaying merges in learned order, is unchanged and correct.
 
-**Script reference:** `01-foundations/microtokenizer.py`, lines 145-161 (`encode` function), lines 147-153 (why comment)
+**Script reference:** `01-foundations/microtokenizer.py`, lines 145-161 (`encode` function), lines 146-153 (docstring with the incorrect rationale)
 
 </details>
 

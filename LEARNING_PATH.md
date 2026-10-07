@@ -162,7 +162,7 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 - [ ] Completed
 
 **3. `02-alignment/microdpo.py`**
-- **Outcome:** You pretrain a base model (700 steps), freeze a copy as the reference policy, build up to 150 synthetic preference pairs that prefer a long completion (5+ characters) over a short one (3 or fewer) sharing the same 2–3 letter prefix, run 60 DPO steps with β = 0.1, and compare the average generated length of the reference and aligned models.
+- **Outcome:** You pretrain a base model (700 steps), freeze a copy as the reference policy, build up to 150 synthetic preference pairs that prefer a name of 5 or more letters (chosen) over a 3-letter name (rejected) sharing its first two letters — so the rejected completion after that prefix is a single letter — run 60 DPO steps with β = 0.1, and compare the average generated length of the reference and aligned models.
 - **Why this step here:** It changes a model from preference pairs with one supervised loss and no reward model, sampling or RL loop. It needs `microgpt.py`'s sequence log-probabilities. Steps 4 and 5 then show the reinforcement-learning route that DPO avoids.
 - **Run:** `python 02-alignment/microdpo.py`
 - **Data:** `names.txt`, downloaded on first run; the preference pairs are built from it by name length.
@@ -248,7 +248,7 @@ Making models fast and small. This track covers every major inference optimizati
 
 **3. `03-systems/microrope.py`**
 - **Outcome:** You rotate query and key pairs by position-dependent angles, show that RoPE scores for the same relative distance agree at different absolute positions while additive sinusoidal scores do not, and compare learned, sinusoidal, RoPE and NTK-scaled RoPE scores beyond the learned table's 64 positions.
-- **Why this step here:** It changes how position enters the query–key dot product from step 1. Steps 10–11 reuse the same 2×2 rotation inside a state-space model.
+- **Why this step here:** It changes how position enters the query–key dot product from step 1. Step 11 reuses the same 2×2 rotation inside a state-space model.
 - **Run:** `python 03-systems/microrope.py`
 - **Data:** None to download; random vectors.
 - **Links:** [source](03-systems/microrope.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/rope.md) · [primary paper](https://arxiv.org/abs/2104.09864) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrope.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/rope.md)
@@ -257,7 +257,7 @@ Making models fast and small. This track covers every major inference optimizati
 
   Pair (0,1) has θ₀ = 1, so it turns once every 2π ≈ 6.3 positions. Pair (14,15) has θ₇ = 10000^(−14/16) ≈ 3.16 × 10⁻⁴, a wavelength of about 19,869 positions. The script prints both in its frequency-spectrum table.
   </details>
-- **Limits:** The relative-position identity is a property of each query–key score. It does not guarantee that a trained model works at lengths it never saw; the extrapolation table compares untrained scores, and NTK scaling is a separate adjustment.
+- **Limits:** The relative-position identity is a property of each query–key score. It does not guarantee that a trained model works at lengths it never saw; the extrapolation table compares untrained scores, and NTK scaling is a separate adjustment. The script also misdescribes that adjustment. `ntk_scaled_frequencies` raises the base to `10000 · s^(d/(d−2))`, so each frequency becomes `θ_i · s^(−2i/(d−2))`: with `d = 16` and `s = 4`, pair (0,1) is unchanged, the last pair is slowed by exactly 4×, and the pairs in between by 1.22× to 3.28×. The comment that high frequencies "get slowed down more" and the printed lines "NTK scaling: slows high-freq rotations" and "Higher scale factors slow all frequencies proportionally" are therefore incorrect.
 - **Time:** 35 min
 - [ ] Completed
 

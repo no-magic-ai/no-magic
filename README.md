@@ -365,7 +365,7 @@ Anki-compatible flashcard decks for spaced repetition review. 190 cards across 4
 uv run --no-project --with genanki python resources/flashcards/generate_anki.py
 ```
 
-The script writes `no-magic-foundations.apkg`, `no-magic-alignment.apkg`, `no-magic-systems.apkg` and a combined `no-magic-complete.apkg` (170 cards) next to itself; `agents.csv` (20 cards) is not exported. Anki renders card fields as HTML, so card text writes inequalities as `&lt;` and `&gt;` and inner products with `⟨ ⟩`. See [`resources/flashcards/`](resources/flashcards/) for the raw card data and generation script.
+The script writes `no-magic-foundations.apkg`, `no-magic-alignment.apkg`, `no-magic-systems.apkg` and a combined `no-magic-complete.apkg` (170 cards) next to itself; `agents.csv` (20 cards) is not exported. Anki renders card fields as HTML, so angle-bracket notation that a browser would read as a tag, such as an inner product `<a,b>`, is written with Unicode brackets `⟨a, b⟩` or the entities `&lt;` and `&gt;`. A `<` or `>` followed by a space or digit, as in `< 1`, is ordinary visible text and is left as written. See [`resources/flashcards/`](resources/flashcards/) for the raw card data and generation script.
 
 ### Learning Path
 
