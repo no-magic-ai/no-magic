@@ -8,7 +8,8 @@ A structured guide through the no-magic implementations. Pick a track based on y
 2. **Check off scripts** as you complete them using the `- [ ]` checkboxes.
 3. **Each script runs without installation** — just `python <path>`. No virtual environment, no dependencies, no configuration. Scripts whose catalog `data_source` is `names_download` fetch makemore's `names.txt` on first run (network needed once; cached as `names.txt` in the directory you run from). Each script's catalog `teaching_kind` says whether it trains and infers, compares trained variants, runs untrained forward computations, or demonstrates a non-learning algorithm.
 4. **Read each script top-to-bottom like a tutorial**, then run it. The comments explain the "why" at every step. After running, experiment: change hyperparameters, swap datasets, break things on purpose.
-5. **Prerequisites matter.** Each step lists what it builds on. If you jump into a track mid-way, check the "Builds on" field and backfill gaps.
+5. **Prerequisites matter.** Each step lists what it builds on. If you jump into a track mid-way, check the "Builds on" field (in Tracks 1–3, "Why this step here") and backfill gaps.
+6. **Predict, then run.** Each step in Tracks 1–3 also gives the exact command, the data it needs, links to the source, paper card, primary paper, preview GIF and (for some steps) an optional lesson in `no-magic-papers`, a question to answer before running with a checked answer, and the limits of what the program shows.
 
 ## Time Estimate Summary
 
@@ -26,49 +27,97 @@ A structured guide through the no-magic implementations. Pick a track based on y
 
 ## Track 1: Weekend Sprint — Transformers (~4 hrs)
 
-From raw text to self-attention. This track builds the core transformer pipeline piece by piece: how text becomes tokens, tokens become vectors, vectors flow through recurrent and attention-based architectures, and how BERT inverts the GPT paradigm.
+From raw text to self-attention. This track builds the core transformer pipeline piece by piece: how text becomes tokens, tokens become vectors, vectors flow through recurrent and attention-based architectures, and how BERT inverts the GPT paradigm. Steps 1–3 are conceptual background: every script is self-contained, and none of the later programs imports or runs code from an earlier one.
 
 ### Steps
 
 **1. `01-foundations/microtokenizer.py`**
-- **You'll learn:** How Byte Pair Encoding iteratively merges frequent character pairs to build a subword vocabulary from raw text.
-- **Builds on:** None — this is the entry point.
-- **Key moment:** Watching the vocabulary grow as the algorithm discovers that common letter pairs like "th" and "er" get merged first, exactly matching linguistic intuition.
+- **Outcome:** You train a byte-level Byte Pair Encoding tokenizer (256 merges over the raw bytes of `names.txt`), watch each merge shrink the corpus, and check that encoding replays the learned merges in order and decodes back to the original text.
+- **Why this step here:** It is the entry point and introduces tokens and vocabularies. It is a conceptual prerequisite only: `microgpt.py` does not use this tokenizer; it builds its own 27-symbol character vocabulary.
+- **Run:** `python 01-foundations/microtokenizer.py`
+- **Data:** Downloads makemore's `names.txt` (32,033 lowercase names, 228,145 bytes) into the current directory on first run and reuses it afterwards. Run every step from the repository root so all steps share one cached copy.
+- **Links:** [source](01-foundations/microtokenizer.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/bpe.md) · [primary paper](https://arxiv.org/abs/1508.07909) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microtokenizer.gif)
+- **Predict before you run:** `apply_merge` scans left to right. What does `apply_merge([97, 97, 97], (97, 97), 256)` return, and how many tokens will the final vocabulary hold?
+  <details><summary>Check your prediction</summary>
+
+  `[256, 97]`. The first two `a` bytes (97) merge into token 256 and the scan jumps past both, so overlapping pairs resolve left to right. The final vocabulary is 256 byte tokens + 256 merges = 512 tokens; the script prints this before training starts.
+  </details>
+- **Limits:** 256 merges learned from 228 KB of names is a toy merge table. The linked card is Sennrich et al.'s subword BPE for translation; the script follows GPT-2's byte-level variant and cites Gage (1994) and Radford et al. (2019).
 - **Time:** 30 min
 - [ ] Completed
 
 **2. `01-foundations/microembedding.py`**
-- **You'll learn:** How Word2Vec's skip-gram model learns to place semantically similar words near each other in vector space using only co-occurrence patterns.
-- **Builds on:** `microtokenizer` (understanding of token vocabularies).
-- **Key moment:** The trained vectors capture word relationships — nearest-neighbor queries return semantically related words despite never being told what words mean.
+- **Outcome:** You learn 32-dimensional name embeddings by projecting character bigram and trigram counts through one linear layer trained with an InfoNCE contrastive loss on (name, augmented name) pairs, then compare cosine similarity for similar and random name pairs and list nearest neighbours.
+- **Why this step here:** It shows how discrete symbols become vectors whose geometry encodes similarity. `microgpt.py` does not reuse these vectors; it learns its own embedding table (`wte`) from scratch.
+- **Run:** `python 01-foundations/microembedding.py`
+- **Data:** `names.txt`, downloaded on first run as in step 1. Training uses the first 5,000 names; the neighbour search uses the first 10,000.
+- **Links:** [source](01-foundations/microembedding.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/word2vec.md) · [primary paper](https://arxiv.org/abs/1301.3781) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microembedding.gif)
+- **Predict before you run:** `extract_ngrams` pads a name as `^name$`. How many n-grams does `"anna"` produce, how many of them does `"anne"` share, and how many parameters will the printed model line report?
+  <details><summary>Check your prediction</summary>
+
+  `"anna"` gives 9 n-grams (5 bigrams and 4 trigrams). It shares 5 with `"anne"`: `^a`, `an`, `nn`, `^an`, `ann`. The n-gram vocabulary from the first 5,000 names fills its 500-entry cap, so the model line reads `32 x 500 = 16,000 params`.
+  </details>
+- **Limits:** This is not word2vec. There is no skip-gram or CBOW model, no words and no context window; the script cites SimCLR and sentence-transformers, and the word2vec card is linked only as the closest card. "Similar" here means overlapping spelling: positives are the same name with a deleted or swapped character.
 - **Time:** 40 min
 - [ ] Completed
 
 **3. `01-foundations/micrornn.py`**
-- **You'll learn:** How recurrent neural networks maintain hidden state across time steps, and why GRUs solve the vanishing gradient problem that plagues vanilla RNNs.
-- **Builds on:** `microembedding` (vector representations of tokens).
-- **Key moment:** Comparing vanilla RNN vs GRU output quality — the gating mechanism visibly improves the model's ability to remember earlier context.
+- **Outcome:** You train a vanilla RNN and a GRU for 3,000 steps each on next-character prediction over a 200-name subset, then compare their final loss, the ratio of gradient norms at the first and last time step of one long sequence, and sampled names.
+- **Why this step here:** It models sequences with a recurrent hidden state before attention replaces recurrence. The GRU update `h_t = (1 - z_t) * h_{t-1} + z_t * candidate` shows how a gate can pass state (and gradient) through unchanged. `microgpt.py` uses none of this code; the step is a conceptual contrast.
+- **Run:** `python 01-foundations/micrornn.py`
+- **Data:** `names.txt`, downloaded on first run; training uses 200 names.
+- **Links:** [source](01-foundations/micrornn.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/rnn-elman.md) · [primary paper](https://onlinelibrary.wiley.com/doi/10.1207/s15516709cog1402_1) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/micrornn.gif)
+- **Predict before you run:** The vocabulary is 27 symbols (26 letters plus a boundary token) and the hidden size is 32. How many parameters will each model print?
+  <details><summary>Check your prediction</summary>
+
+  Vanilla RNN: 2,811 (`W_xh` 32×27 + `W_hh` 32×32 + `b_h` 32 + `W_hy` 27×32 + `b_y` 27). GRU: 6,555 (three input and three recurrent matrices, 3 × (864 + 1,024), plus the same 27×32 output layer and `b_y`, and no hidden bias). That is 2.33 times the vanilla count, not the doubling the source comment mentions.
+  </details>
+- **Limits:** One run on 200 names is not evidence that GRUs always beat vanilla RNNs, and the gradient ratio comes from a single sequence. The linked card is Elman (1990); the source cites Rumelhart et al. for the vanilla RNN and Cho et al. (2014) for the GRU.
 - **Time:** 45 min
 - [ ] Completed
 
 **4. `01-foundations/microgpt.py`**
-- **You'll learn:** How a decoder-only transformer uses masked self-attention and learned positional encodings to generate text autoregressively, trained with scalar autograd from scratch.
-- **Builds on:** `microtokenizer` (tokenization), `micrornn` (sequential modeling concepts), `microembedding` (vector representations).
-- **Key moment:** The `Value` class implementing reverse-mode autodiff — a full backward pass through attention, layer norm, and MLP, all in pure Python.
+- **Outcome:** You build a one-layer, four-head decoder-only transformer on a scalar autograd `Value` engine, train it for 1,000 Adam steps on next-character prediction (one name per step), and sample 20 names at temperature 0.5.
+- **Why this step here:** It combines the earlier ideas — symbols as ids (step 1), learned vectors (step 2) and next-symbol prediction from context (step 3) — but imports none of their code. Its vocabulary is the 26 letters found in `names.txt` plus a BOS token, not the BPE tokenizer, and its embeddings are trained from scratch. Causality comes from the key/value lists: position `t` can only attend to the keys appended at positions `0..t`.
+- **Run:** `python 01-foundations/microgpt.py` (add `--interactive` to change `n_embd`, `block_size`, `num_steps` or `learning_rate` and retrain)
+- **Data:** `names.txt`, downloaded on first run; the names are shuffled and cycled one per step.
+- **Links:** [source](01-foundations/microgpt.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/gpt-1.md) · [primary paper](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microgpt.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/gpt-1.md)
+- **Predict before you run:** What will the `Parameters:` line print?
+  <details><summary>Check your prediction</summary>
+
+  `Parameters: 4,192`. Token embeddings 27×16 = 432, position embeddings 16×16 = 256, four attention matrices 4 × 16×16 = 1,024, MLP 64×16 + 16×64 = 2,048 and the output head 27×16 = 432. There are no bias terms.
+  </details>
+- **Limits:** A character-level toy of about 4,200 parameters. The source follows GPT-2's layout with RMSNorm instead of LayerNorm, ReLU instead of GELU and no biases. GPT-1 adds supervised fine-tuning on downstream tasks and uses a 40,000-merge BPE vocabulary; neither is here. The sampled names show learned character statistics, not language understanding.
 - **Time:** 60 min
 - [ ] Completed
 
 **5. `01-foundations/microbert.py`**
-- **You'll learn:** How BERT's bidirectional masked language model differs from GPT's autoregressive approach — same transformer blocks, fundamentally different training objective.
-- **Builds on:** `microgpt` (transformer architecture, autograd `Value` class).
-- **Key moment:** Seeing that BERT attends to tokens both left and right of the mask, while GPT can only look left — a single masking change creates a completely different model.
+- **Outcome:** You train an encoder of the same size for 3,000 steps with masked-character prediction (25% of characters replaced by `[MASK]`, at least one per name), then measure top-1 and top-3 fill-in accuracy and compare predictions for one masked slot in different contexts.
+- **Why this step here:** It reuses the transformer block from step 4 and changes two things: every position attends to every other position, and the loss covers only the masked positions. The script carries its own copy of the `Value` engine; nothing is imported from `microgpt.py`.
+- **Run:** `python 01-foundations/microbert.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](01-foundations/microbert.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/bert.md) · [primary paper](https://arxiv.org/abs/1810.04805) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbert.gif)
+- **Predict before you run:** How does the printed parameter count differ from `microgpt.py`'s 4,192?
+  <details><summary>Check your prediction</summary>
+
+  `Parameters: 4,224`, 32 more. The vocabulary gains a `[MASK]` token (26 letters + BOS + MASK = 28), which adds one 16-wide row to the token embeddings and one to the prediction head.
+  </details>
+- **Limits:** BERT masks 15% of tokens with an 80/10/10 mask/random/keep split and also trains next-sentence prediction; the script masks 25% with `[MASK]` only and has neither the split nor sentence pairs. Fill-in accuracy is measured on names taken from the training data.
 - **Time:** 45 min
 - [ ] Completed
 
 **6. `03-systems/microattention.py`**
-- **You'll learn:** How multi-head attention, grouped-query attention, and multi-query attention trade off between quality and compute by sharing key/value heads across query heads.
-- **Builds on:** `microgpt` (self-attention fundamentals).
-- **Key moment:** The side-by-side comparison showing that grouped-query attention achieves nearly the same output quality as full multi-head attention with significantly fewer parameters.
+- **Outcome:** You run single-head, multi-head (MHA), grouped-query (GQA), multi-query (MQA) and sliding-window attention forward on the same random input (32 positions, width 64, 4 heads) and read an analytic FLOP and memory table alongside each output's cosine similarity to the MHA output.
+- **Why this step here:** It generalises the per-head loop of step 4. GQA and MQA reuse the MHA query weights and average groups of MHA key/value weights, so each variant can be compared against the same MHA output.
+- **Run:** `python 03-systems/microattention.py` (add `--interactive` to change the sequence length, width, head counts or window)
+- **Data:** None to download; inputs and weights are random matrices drawn with seed 42.
+- **Links:** [source](03-systems/microattention.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/transformer.md) · [primary paper](https://arxiv.org/abs/1706.03762) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microattention.gif)
+- **Predict before you run:** For the GQA row (2 key/value heads) and the MQA row (1), what will the Memory column show?
+  <details><summary>Check your prediction</summary>
+
+  GQA: 2 × 2 × 32 × 16 = 2,048 floats; MQA: 2 × 32 × 16 = 1,024 floats, the keys and values cached for 32 positions at head width 16. Careful when comparing rows: the vanilla and MHA rows report the 32×32 score matrix (1,024) and the sliding-window row reports 32 × 8 = 256 scores, which are different quantities.
+  </details>
+- **Limits:** Nothing is trained. The cosine similarity only says how close each untrained output is to the MHA output when the shared weights are averaged; it is not a quality or accuracy measurement, and the pure-Python timings are not throughput results. Beyond the Transformer card the source cites Shazeer (2019), Ainslie et al. (2023) and Beltagy et al. (2020).
 - **Time:** 40 min
 - [ ] Completed
 
