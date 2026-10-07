@@ -210,93 +210,189 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 
 ## Track 3: Deep Dive — Modern Inference (~7 hrs)
 
-Making models fast and small. This track covers every major inference optimization: efficient attention patterns, positional encoding, KV caching, memory management, quantization, decoding strategies, and state-space models.
+Making models fast and small. This track covers every major inference optimization: efficient attention patterns, positional encoding, KV caching, memory management, quantization, decoding strategies, and state-space models. Every program here runs on a CPU in pure Python, so speed and memory figures are counts and illustrative timings, not GPU benchmarks.
 
 **Prerequisites:** `01-foundations/microgpt.py` (transformer forward pass and attention mechanics).
 
 ### Steps
 
 **1. `03-systems/microattention.py`**
-- **You'll learn:** How multi-head, grouped-query, and multi-query attention variants trade quality for throughput by sharing key/value projections.
-- **Builds on:** `microgpt` (self-attention fundamentals).
-- **Key moment:** The side-by-side output comparison showing grouped-query attention matches multi-head quality with fewer parameters.
+- **Outcome:** You run single-head, multi-head (MHA), grouped-query (GQA), multi-query (MQA) and sliding-window attention forward on the same random input and compare an analytic FLOP and memory table with each output's cosine similarity to the MHA output.
+- **Why this step here:** Every later attention optimisation in this track starts from these variants, and GQA/MQA explain why the KV cache of step 4 can be smaller than one key/value pair per head. It needs `microgpt.py`'s per-head attention loop.
+- **Run:** `python 03-systems/microattention.py` (add `--interactive` to change the sequence length, width, head counts or window)
+- **Data:** None to download; inputs and weights are random matrices drawn with seed 42.
+- **Links:** [source](03-systems/microattention.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/transformer.md) · [primary paper](https://arxiv.org/abs/1706.03762) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microattention.gif)
+- **Predict before you run:** With 4 query heads, 2 GQA key/value heads, a 32-position sequence and a window of 8, what reductions will the takeaways print for GQA's KV memory, MQA's KV memory and the sliding window's attention cost?
+  <details><summary>Check your prediction</summary>
+
+  GQA cuts KV memory 4 / 2 = 2x, MQA cuts it 4x (4 heads to 1), and the sliding window is 32 / 8 = 4x cheaper than full attention at this length. The Memory column shows the same story: 2,048 floats of cached keys and values for GQA and 1,024 for MQA.
+  </details>
+- **Limits:** Nothing is trained, so the cosine similarities say how close untrained outputs are to the MHA output when the shared weights are averaged, not how well a trained GQA or MQA model performs. Timings are pure Python.
 - **Time:** 40 min
 - [ ] Completed
 
 **2. `03-systems/microflash.py`**
-- **You'll learn:** How Flash Attention reorders the attention computation to work in tiles, avoiding materializing the full N x N attention matrix and reducing memory from O(N^2) to O(N).
-- **Builds on:** `microattention` (standard attention as baseline).
-- **Key moment:** The tiled softmax — computing attention in blocks while maintaining numerical equivalence to the naive implementation via online softmax normalization.
+- **Outcome:** You check that tiled attention with an online softmax matches standard attention to within 10⁻⁶ on five sequence-length/block-size configurations, then tabulate how many score floats each method holds at once.
+- **Why this step here:** It keeps the attention result from step 1 exactly and changes only the order of computation, the idea behind memory-aware kernels. Standard attention from step 1 is the baseline it is checked against.
+- **Run:** `python 03-systems/microflash.py`
+- **Data:** None to download; random query, key and value matrices.
+- **Links:** [source](03-systems/microflash.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/flash-attention.md) · [primary paper](https://arxiv.org/abs/2205.14135) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microflash.gif)
+- **Predict before you run:** In the block-size table for N = 64, how many score floats does one tile hold and how many tiles are processed when B = 8? How many tiles does the (N = 37, B = 8) verification case need?
+  <details><summary>Check your prediction</summary>
+
+  B = 8 holds 8 × 8 = 64 floats per tile and processes ⌈64/8⌉² = 64 tiles. N = 37 with B = 8 needs ⌈37/8⌉² = 25 tiles, the last row and column of tiles being partial.
+  </details>
+- **Limits:** A simulation of the algorithm, not of the hardware: pure Python is slower than the standard version here, there is no fast on-chip memory, and "memory" counts only the score floats held at once (N² for standard, B² for one tile), not the running output and softmax statistics the tiled version also keeps.
 - **Time:** 40 min
 - [ ] Completed
 
 **3. `03-systems/microrope.py`**
-- **You'll learn:** How Rotary Position Embeddings encode position by rotating query and key vectors in 2D subspaces, giving the model relative position awareness without learned position embeddings.
-- **Builds on:** `microattention` (query/key dot product mechanics).
-- **Key moment:** The rotation matrix construction — position information is injected by rotating pairs of dimensions, and the dot product between rotated queries and keys naturally depends on their relative distance.
+- **Outcome:** You rotate query and key pairs by position-dependent angles, show that RoPE scores for the same relative distance agree at different absolute positions while additive sinusoidal scores do not, and compare learned, sinusoidal, RoPE and NTK-scaled RoPE scores beyond the learned table's 64 positions.
+- **Why this step here:** It changes how position enters the query–key dot product from step 1. Steps 10–11 reuse the same 2×2 rotation inside a state-space model.
+- **Run:** `python 03-systems/microrope.py`
+- **Data:** None to download; random vectors.
+- **Links:** [source](03-systems/microrope.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/rope.md) · [primary paper](https://arxiv.org/abs/2104.09864) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrope.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/rope.md)
+- **Predict before you run:** With head dimension 16 and base 10,000, pair `i` rotates by `θᵢ = 10000^(−2i/16)` per position. After how many positions does pair (0,1) complete a full turn, and pair (14,15)?
+  <details><summary>Check your prediction</summary>
+
+  Pair (0,1) has θ₀ = 1, so it turns once every 2π ≈ 6.3 positions. Pair (14,15) has θ₇ = 10000^(−14/16) ≈ 3.16 × 10⁻⁴, a wavelength of about 19,869 positions. The script prints both in its frequency-spectrum table.
+  </details>
+- **Limits:** The relative-position identity is a property of each query–key score. It does not guarantee that a trained model works at lengths it never saw; the extrapolation table compares untrained scores, and NTK scaling is a separate adjustment.
 - **Time:** 35 min
 - [ ] Completed
 
 **4. `03-systems/microkv.py`**
-- **You'll learn:** How KV caching avoids redundant computation during autoregressive generation by storing previously computed key and value tensors and only computing attention for the new token.
-- **Builds on:** `microgpt` (autoregressive generation loop).
-- **Key moment:** The before/after comparison — generation without caching recomputes all previous tokens at every step; with caching, each new token requires only one new key-value pair.
+- **Outcome:** You train a small model (300 steps), greedily generate 16 characters with and without a KV cache, confirm both produce the same tokens, count the multiplications each needs per step, and track cache size, then run a paged-allocation trace.
+- **Why this step here:** It removes the repeated work in `microgpt.py`'s generation loop: without a cache every step recomputes keys and values for the whole prefix. Step 5 manages the memory this cache occupies.
+- **Run:** `python 03-systems/microkv.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](03-systems/microkv.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/kv-cache.md) · [primary paper](https://arxiv.org/abs/2211.05102) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microkv.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/kv-cache.md)
+- **Predict before you run:** The model has 16-wide embeddings, 2 heads, one layer and a 27-symbol vocabulary. How many multiplications do the two methods need at step 1 and at step 16, and how many floats does the cache hold after 16 positions?
+  <details><summary>Check your prediction</summary>
+
+  Step 1: 3,536 for both (one position to process either way). Step 16: 53,936 without the cache versus 4,016 with it, a 13.4x difference; over all 16 steps the ratio is 7.5x. The cache grows by 2 × 1 × 16 = 32 floats per position, reaching 512 floats (2,048 bytes as float32). Running the script's two generation functions with random weights gave exactly these counts and identical tokens; the counts do not depend on the weight values.
+  </details>
+- **Limits:** The match is exact because both paths use the same weights, the same causal attention and greedy decoding. Multi-query attention or a quantized cache would change the outputs and are different designs. The closing signpost's "~5.2 GB" for LLaMA-2 70B does not follow from the script's own per-position formula: 80 layers × 8,192 channels × 4,096 positions × 2 (K and V) × 2 bytes is about 10.7 GB without grouped-query attention, and about 1.3 GB with the 8 key/value heads LLaMA-2 70B actually uses.
 - **Time:** 35 min
 - [ ] Completed
 
 **5. `03-systems/micropaged.py`**
-- **You'll learn:** How PagedAttention manages KV cache memory using virtual memory concepts — fixed-size blocks, a page table, and on-demand allocation — eliminating memory fragmentation during batched inference.
-- **Builds on:** `microkv` (KV cache fundamentals).
-- **Key moment:** The page table lookup — instead of contiguous pre-allocated memory, the cache maps logical positions to physical blocks, enabling efficient memory sharing across sequences.
+- **Outcome:** You compare a naive allocator that reserves the maximum length for each request with a paged allocator (16 pages of 4 slots), check that paged attention matches contiguous attention, and walk through a serving timeline, copy-on-write for beam search, continuous batching and an internal-fragmentation table.
+- **Why this step here:** It manages the cache from step 4 the way an operating system manages memory pages, which is what lets many variable-length requests share one memory budget.
+- **Run:** `python 03-systems/micropaged.py`
+- **Data:** None to download; random key and value vectors.
+- **Links:** [source](03-systems/micropaged.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/pagedattention.md) · [primary paper](https://arxiv.org/abs/2309.06180) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/micropaged.gif)
+- **Predict before you run:** With 4 slots per page and a naive reservation of 20 slots, what does the fragmentation table print for a 13-token sequence?
+  <details><summary>Check your prediction</summary>
+
+  `13   4    3  18.8%    7  35.0%`: 4 pages hold 16 slots, so 3 are wasted (3/16 = 18.8%), while the naive reservation wastes 20 − 13 = 7 slots (35.0%).
+  </details>
+- **Limits:** A simulation of allocation and bookkeeping; there are no GPU kernels or real memory, and the serving numbers come from a fixed toy workload of 8 requests.
 - **Time:** 40 min
 - [ ] Completed
 
 **6. `03-systems/microquant.py`**
-- **You'll learn:** How post-training quantization maps 32-bit floating point weights to 8-bit or 4-bit integers using scale and zero-point calibration, shrinking model size with minimal accuracy loss.
-- **Builds on:** `microgpt` (trained model weights).
-- **Key moment:** The quantization error analysis — seeing exactly where precision loss occurs and how calibration data selection affects the scale/zero-point calculation.
+- **Outcome:** You train a model (800 steps), quantize every weight matrix with per-tensor absmax INT8 and INT4, zero-point INT8 and per-channel INT8, and compare loss, round-trip error, size and samples against the float baseline.
+- **Why this step here:** Weights, like the KV cache, are memory. This step introduces the scale and zero-point arithmetic that QLoRA (Track 2) and TurboQuant (step 7) build on.
+- **Run:** `python 03-systems/microquant.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](03-systems/microquant.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/llm-int8.md) · [primary paper](https://arxiv.org/abs/2208.07339) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microquant.gif)
+- **Predict before you run:** The model has 4,192 weights. What sizes and compression ratios will the results table report for float32, INT8 and INT4?
+  <details><summary>Check your prediction</summary>
+
+  16,768 bytes, 4,192 bytes and 2,096 bytes, giving `float32->INT8 = 4.0x` and `float32->INT4 = 8.0x`. The size count ignores the stored scale factors.
+  </details>
+- **Limits:** Scales come from the weights themselves; no calibration data is used. The linked LLM.int8() paper's method — vector-wise quantization of activations and weights plus a 16-bit path for outlier features — is not implemented; this is weight-only round-to-nearest on a 4,192-parameter model.
 - **Time:** 40 min
 - [ ] Completed
 
 **7. `03-systems/microturboquant.py`**
-- **You'll learn:** How a single random rotation applied before scalar quantization gives data-oblivious vector compression with provable inner-product preservation — no calibration data required, unlike the methods in `microquant`.
-- **Builds on:** `microquant` (scalar quantization mechanics), `microembedding` (vectors as the object being quantized).
-- **Key moment:** The rotated-coordinate histogram — raw embedding coordinates have irregular, vector-specific shapes; after one shared random rotation, every vector's coordinates concentrate into the same Beta-shaped marginal, which is what makes a single universal 1-D quantizer optimal for all of them.
+- **Outcome:** You sample one random rotation, quantize 32-dimensional unit vectors with per-vector absmax before and after rotating, compare inner-product error at 1, 2, 4 and 8 bits on anisotropic synthetic vectors and on name embeddings, and try a sign-bit (one bit per random projection) inner-product estimate.
+- **Why this step here:** It applies the scalar quantizer from step 6 to vectors such as cached keys, and asks what a shared random rotation changes when no calibration data is available. It also uses the idea of a vector embedding from Track 1.
+- **Run:** `python 03-systems/microturboquant.py`
+- **Data:** `names.txt`, downloaded on first run; 300 names become embeddings by a random projection of their bigram counts, and 300 anisotropic vectors are synthetic.
+- **Links:** [source](03-systems/microturboquant.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/turboquant.md) · [primary paper](https://arxiv.org/abs/2504.19874) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microturboquant.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/turboquant.md)
+- **Predict before you run:** (1) `absmax_quantize` uses `2^(bits−1) − 1` levels per sign, with 1 level when `bits` is 1. What grids do the 1-bit and 2-bit rows use? (2) `qjl_estimate_inner_product` returns `(π/2) × mean(sign agreement)`. What does it return for two identical unit vectors?
+  <details><summary>Check your prediction</summary>
+
+  (1) Both use the same three values {−1, 0, +1}, so the two rows quantize every vector identically, and neither is a true 1-bit or 2-bit code. Their printed errors still differ slightly (0.0167 and 0.0173 for the synthetic baseline in one run) because each row draws a fresh random sample of 2,000 vector pairs. (2) π/2 ≈ 1.571 rather than 1. For Gaussian projections the expected sign agreement is 1 − 2·arccos(ρ)/π, so the estimate's expectation is arcsin(ρ), not the cosine ρ: with ρ = 0.5 and 40,000 projections the script's functions returned 0.526, against arcsin(0.5) = 0.524. The estimator is biased except at ρ = 0.
+  </details>
+- **Limits:** The paper is Zandieh, Daliri, Hadian and Mirrokni, "TurboQuant: Online Vector Quantization with Near-optimal Distortion Rate" (arXiv:2504.19874), as the linked card says. The script's header comment and the implementation guide (`docs/implementation.md`) attribute it to "Aamand et al." with the title "…with Optimal Bit Budget"; that attribution and title are incorrect. The script is a toy: it uses per-vector absmax instead of the paper's precomputed Lloyd–Max codebooks, and its sign demo applies paired signs to whole vectors. The paper's inner-product quantizer instead quantizes the residual left by the MSE quantizer and estimates inner products against an unquantized query, which makes that estimate unbiased; none of that is implemented here.
 - **Time:** 45 min
 - [ ] Completed
 
 **8. `03-systems/microbeam.py`**
-- **You'll learn:** How beam search, top-k, top-p (nucleus), and temperature sampling explore the output distribution differently, producing outputs that range from deterministic to creative.
-- **Builds on:** `microgpt` (autoregressive token generation).
-- **Key moment:** Comparing beam search (finds the most probable sequence) against nucleus sampling (samples from the dynamic top-p portion of the distribution) on the same prompt — same model, completely different outputs.
+- **Outcome:** You train a target model (16-dimensional, 700 steps) and a smaller draft model (8-dimensional, 500 steps), then compare greedy, temperature, top-k, top-p, beam search and speculative decoding on the same prompts, measure diversity over 20 seed letters, and report the draft acceptance rate.
+- **Why this step here:** Every program so far either sampled or took the most likely token; this step makes that choice the subject. It reuses the cached generation of step 4.
+- **Run:** `python 03-systems/microbeam.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](03-systems/microbeam.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/nucleus-sampling.md) · [primary paper](https://arxiv.org/abs/1904.09751) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbeam.gif)
+- **Predict before you run:** `decode_top_p` adds tokens in order of probability until their total reaches `p`. With next-token probabilities 0.5, 0.3, 0.15 and 0.05 and `p = 0.9`, which tokens are kept and with what renormalised probabilities?
+  <details><summary>Check your prediction</summary>
+
+  The first three (0.5 + 0.3 + 0.15 = 0.95 ≥ 0.9), renormalised to about 0.526, 0.316 and 0.158; the 0.05 token can never be sampled at this step.
+  </details>
+- **Limits:** The speculative path picks each draft token by argmax rather than sampling it from the draft distribution, so the exact-distribution guarantee of Leviathan et al. does not carry over; read the acceptance rate as a demo statistic. Nothing runs in parallel, so there is no wall-clock speedup. The linked card covers nucleus sampling only.
 - **Time:** 35 min
 - [ ] Completed
 
 **9. `03-systems/microssm.py`**
-- **You'll learn:** How state-space models replace attention with a linear recurrence that processes sequences in O(N) time, achieving transformer-competitive quality without the quadratic attention bottleneck.
-- **Builds on:** `microgpt` (sequence modeling baseline for comparison).
-- **Key moment:** The dual-mode computation — the same SSM parameters support both a parallel convolution mode (fast training) and a sequential recurrence mode (fast inference), unified by the same math.
+- **Outcome:** You build a one-layer selective state-space model (Euler discretization, input-dependent step size Δ and input-dependent B and C), train it for 800 steps on 250 names, sample names, and read an RNN/transformer/SSM comparison table.
+- **Why this step here:** It replaces attention and its growing cache (step 4) with a fixed-size state updated by a linear recurrence, and makes that update depend on the input.
+- **Run:** `python 03-systems/microssm.py`
+- **Data:** `names.txt`, downloaded on first run; training uses 250 names.
+- **Links:** [source](03-systems/microssm.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microssm.gif)
+- **Predict before you run:** Δ is `softplus(W x + b)` with every bias initialised to −2. What is Δ for a channel whose projected input is 0, and how many floats of state does the layer carry per token, however long the sequence?
+  <details><summary>Check your prediction</summary>
+
+  softplus(−2) = ln(1 + e⁻²) ≈ 0.127, a small step that mostly preserves the state. The state is 8 × 16 = 128 floats, printed as `SSM state size per layer: 128`, against a KV cache that grows with every position.
+  </details>
+- **Limits:** The source cites Mamba (Gu and Dao, 2023) and runs the recurrence sequentially; there is no parallel scan, it uses Euler rather than zero-order-hold discretization, and the linked Mamba-2 card's structured state space duality is not implemented. The comparison table states asymptotic costs; it is not a measurement.
 - **Time:** 35 min
 - [ ] Completed
 
 **10. `03-systems/microdiscretize.py`**
-- **You'll learn:** How Euler, ZOH, and trapezoidal discretization turn continuous-time SSM equations into discrete recurrences, and why each method creates different stability properties and inductive biases.
-- **Builds on:** `microssm` (SSM recurrence mechanics).
-- **Key moment:** The stability table — Euler diverges at large delta while ZOH/trapezoidal remain bounded for any step size, because exp() maps the entire negative real line to (0,1).
+- **Outcome:** You train the same small SSM three times — Euler, zero-order hold (ZOH) and trapezoidal discretization — on an irregular sine-prediction task and a running-parity task, then print a stability table of |Ā| against the step size Δ.
+- **Why this step here:** Step 9 used Euler discretization; this step shows what that choice costs and what the exponential alternatives buy.
+- **Run:** `python 03-systems/microdiscretize.py`
+- **Data:** None to download; sine and parity sequences are generated in the script.
+- **Links:** [source](03-systems/microdiscretize.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdiscretize.gif)
+- **Predict before you run:** The table uses a = −0.5. What does the row for Δ = 4.0 print for |Euler|, |ZOH| and the stability label?
+  <details><summary>Check your prediction</summary>
+
+  |Euler| = |1 + 4 × (−0.5)| = 1.0000, |ZOH| = |Trap| = e⁻² ≈ 0.1353, and the label is `NO — DIVERGES` because the script tests |Ā| < 1 strictly. At exactly 1 the state neither decays nor grows; Euler first grows the state at Δ = 5 (|Ā| = 1.5).
+  </details>
+- **Limits:** The source cites Mamba-3 (arXiv:2603.15569) Section 3 and S4; its trapezoidal rule splits the ZOH input term between `x_t` and `x_(t−1)`. The linked Mamba-2 card's structured state space duality is not implemented. Task accuracies come from one seed.
 - **Time:** 40 min
 - [ ] Completed
 
 **11. `03-systems/microcomplexssm.py`**
-- **You'll learn:** How complex-valued SSM eigenvalues enable rotation (not just decay), why this is mathematically identical to applying data-dependent RoPE rotation matrices, and why real-only SSMs fail at parity.
-- **Builds on:** `microssm` (SSM state transitions), `microrope` (rotation matrices, helpful but not required).
-- **Key moment:** The equivalence proof — complex and real+RoPE forward passes produce identical outputs to floating-point precision, proving that complex multiply IS 2x2 rotation.
+- **Outcome:** You show that a complex-valued diagonal SSM and a real SSM that rotates paired state dimensions with 2×2 matrices (a data-dependent RoPE) produce the same outputs to floating-point precision, then train real-only, complex and rotation variants on running parity.
+- **Why this step here:** It joins the SSM of steps 9–10 with the rotation of step 3: a complex multiply is a scaled 2×2 rotation.
+- **Run:** `python 03-systems/microcomplexssm.py`
+- **Data:** None to download; random bit sequences with running-XOR labels.
+- **Links:** [source](03-systems/microcomplexssm.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcomplexssm.gif)
+- **Predict before you run:** Apply R(θ) with θ = π and r = 1 to the state pair (0.6, 0.0). What comes out, and why can the real-only variant (`a_n = exp(log_A_n)`) never do the same?
+  <details><summary>Check your prediction</summary>
+
+  (−0.6, ≈7 × 10⁻¹⁷): a half turn flips the sign, the same result as multiplying 0.6 by e^(iπ). The real-only variant's `a_n = exp(log_A_n)` is always positive, so it can shrink or grow the state but never flip its sign, and a running parity needs a flip on every 1-bit. A negative real eigenvalue could flip the sign; this parameterisation rules it out.
+  </details>
+- **Limits:** The source cites Mamba-3 (arXiv:2603.15569) Proposition 3 and RoPE (Su et al., 2021); the linked Mamba-2 card's structured state space duality is not implemented. The equivalence check uses fixed angles; the trained "complex" and "rotation" variants run the same real-arithmetic update from the same initialization distribution, with every angle starting near π (the parity solution), so differences between those two come only from their random draws. Parity accuracies come from one training run per variant.
 - **Time:** 40 min
 - [ ] Completed
 
 **12. `03-systems/microroofline.py`**
-- **You'll learn:** How the roofline model classifies operations as memory-bound or compute-bound, and why MIMO SSM state updates (matmul) outperform SISO (outer product) on GPUs despite doing 11x more FLOPs.
-- **Builds on:** `microssm` (SSM state updates), `microflash` (hardware-aware algorithm design, helpful but not required).
-- **Key moment:** The ASCII roofline plot — seeing SISO at AI≈2 (0.7% GPU utilization) versus MIMO at AI≈32 (shifting toward compute-bound) makes the hardware argument visceral.
+- **Outcome:** You compute arithmetic intensity (FLOPs per byte) for a vector add, an outer product and two matrix multiplies, place pure-Python timings on an ASCII roofline built from assumed CPU peaks (50 GFLOPS, 100 GB/s), compare SISO and rank-16 MIMO SSM state updates, and train SISO and rank-4 MIMO SSMs on dual-sine prediction.
+- **Why this step here:** It uses hardware arithmetic to show why writing the SSM update of steps 9–11 as a matrix multiply (MIMO) instead of an outer product (SISO) raises arithmetic intensity, which matters on accelerators even though it adds FLOPs.
+- **Run:** `python 03-systems/microroofline.py`
+- **Data:** None to download; sine sequences are generated in the script.
+- **Links:** [source](03-systems/microroofline.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/roofline.md) · [primary paper](https://dl.acm.org/doi/10.1145/1498765.1498785) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microroofline.gif)
+- **Predict before you run:** With 16 states and 8 channels, the SISO update costs 3 × 16 × 8 FLOPs and reads (16×8 + 16 + 8) float64 values per step; the rank-16 MIMO update costs 16×8 + 2 × 16 × 8 × 16 FLOPs and reads (16×8 + 16×16 + 16×8) values. What arithmetic intensities and FLOP ratio will Phase 3 print?
+  <details><summary>Check your prediction</summary>
+
+  SISO: 384 / 1,216 bytes ≈ 0.32 FLOPs/byte; MIMO-16: 4,224 / 4,096 bytes ≈ 1.03, with 11.0x the FLOPs. In the separate operation table the 16×16 outer product sits at 2.00 and the 256×256 rank-16 matrix multiply at 32.00; under the script's byte counts that larger figure comes from the larger matrix size, not from the rank.
+  </details>
+- **Limits:** The peak figures are assumed constants, not measured, and pure-Python timings are dominated by interpreter overhead, so the roofline placement is illustrative; nothing runs on a GPU. The source cites Mamba-3 (arXiv:2603.15569) for the MIMO update and Williams et al. (2009) for the roofline model.
 - **Time:** 40 min
 - [ ] Completed
 
