@@ -23,7 +23,7 @@ The stability boundary is at `delta = -2/a_n = -2/(-0.5) = 4.0`. Any `delta > 4.
 
 ZOH at `delta = 5.0`: `exp(5.0 * (-0.5)) = exp(-2.5) ≈ 0.082` -- unconditionally stable regardless of step size.
 
-**Why:** Euler's linear approximation `1 + delta * a_n` can overshoot into negative territory and exceed magnitude 1.0, creating oscillatory divergence. The ZOH exponential `exp(delta * a_n)` maps the continuous-time stable region (negative real axis) into the discrete-time stable region (unit disk) exactly, preserving stability for any step size. This is why production SSMs avoid forward Euler: Mamba uses ZOH, and S4 uses the bilinear (Tustin) method, which also maps the stable half-plane into the unit disk (the comment on lines 264-267 of `microssm.py` notes the S4 choice).
+**Why:** Euler's linear approximation `1 + delta * a_n` can overshoot into negative territory and exceed magnitude 1.0, creating oscillatory divergence. The ZOH exponential `exp(delta * a_n)` maps the continuous-time stable region (negative real axis) into the discrete-time stable region (unit disk) exactly, preserving stability for any step size. This is why production SSMs avoid forward Euler for the state: S4 uses the bilinear (Tustin) method, which also maps the stable half-plane into the unit disk (the comment on lines 264-267 of `microssm.py` notes the S4 choice), and Mamba keeps ZOH's state factor `exp(delta * A)`. The Mamba-1 paper describes its discretization as ZOH, but the Mamba-3 paper (arXiv:2603.15569, Section 3.1) points out that Mamba-1 and Mamba-2 implement exponential-Euler: the same `exp(delta * A)` state factor with the input term simplified to `delta * B`.
 
 **Script reference:** `03-systems/microdiscretize.py`, lines 322-349 (`euler_discretize`), lines 744-783 (stability analysis table)
 
@@ -42,10 +42,10 @@ ZOH at `delta = 5.0`: `exp(5.0 * (-0.5)) = exp(-2.5) ≈ 0.082` -- unconditional
 
 **Answer:**
 
-- `alpha = 1.0`: All weight on `x_t`, zero weight on `x_{t-1}`. The `x_{t-1}` dependency vanishes, and the method recovers ZOH exactly -- a purely causal recurrence with no implicit look-back.
+- `alpha = 1.0`: All weight on `x_t`, zero weight on `x_{t-1}`. The `x_{t-1}` dependency vanishes, and the script's rule recovers its exact ZOH discretization -- a purely causal recurrence with no implicit look-back. (In Mamba-3's own rule the corresponding setting, `λ = 1`, recovers Mamba-2's exponential-Euler instead, because its input coefficient is `delta`, not the ZOH integral.)
 - `alpha = 0.0`: All weight on `x_{t-1}`, zero weight on `x_t`. The method becomes fully implicit -- the current input has no direct effect, and the system responds with a one-step delay.
 
-**Why:** The `alpha = 0.5` split creates an implicit dependence on `x_{t-1}` within the recurrence itself: the input enters through a 2-tap filter over adjacent inputs. The script's docstring (lines 395-415), citing Mamba-3 (arXiv:2603.15569), presents this as the reason Mamba-3 can drop the separate short convolution (`conv1d`) that Mamba-1 and Mamba-2 place before the SSM. The script's own rule splits the ZOH input integral between the two inputs; check the Mamba-3 paper for the exact coefficients it uses.
+**Why:** The `alpha = 0.5` split creates an implicit dependence on `x_{t-1}` within the recurrence itself: the input enters through a 2-tap filter over adjacent inputs. The script's docstring (lines 395-415), citing Mamba-3 (arXiv:2603.15569), presents this as the reason Mamba-3 can drop the separate short convolution (`conv1d`) that Mamba-1 and Mamba-2 place before the SSM. The paper's rule differs from the script's: it uses `h_t = e^(Δ·A) h_{t-1} + (1 − λ)·Δ·e^(Δ·A)·B_{t-1} x_{t-1} + λ·Δ·B_t x_t` with a data-dependent `λ`, while the script splits the exact ZOH input integral with a fixed `alpha`. The paper also reports dropping the short convolution only in combination with added B and C biases (its ablation finds the two work together), so the size-2 filter alone does not show that the convolution is redundant.
 
 **Script reference:** `03-systems/microdiscretize.py`, lines 395-447 (`trapezoidal_discretize`, the alpha parameter and the x\_{t-1} weighting)
 
