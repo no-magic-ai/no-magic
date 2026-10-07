@@ -125,44 +125,84 @@ From raw text to self-attention. This track builds the core transformer pipeline
 
 ## Track 2: Weekend Sprint — Alignment (~3 hrs)
 
-How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, preference optimization, and reinforcement learning from human feedback — the techniques that turn a base language model into a useful assistant.
+How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, preference optimization, and reinforcement learning from human feedback — the techniques that turn a base language model into a useful assistant. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people.
 
 **Prerequisites:** Complete Track 1, or at minimum `01-foundations/microgpt.py` (the autograd `Value` class and transformer architecture are assumed knowledge).
 
 ### Steps
 
 **1. `02-alignment/microlora.py`**
-- **You'll learn:** How Low-Rank Adaptation freezes pretrained weights and injects small trainable matrices (A and B) that capture task-specific adjustments without modifying the original model.
-- **Builds on:** `microgpt` (transformer weights and forward pass).
-- **Key moment:** The rank-1 update math — a weight matrix with millions of parameters gets adapted using two tiny matrices whose product has the same shape, dramatically reducing trainable parameters.
+- **Outcome:** You pretrain a `microgpt`-sized base model on names starting A–M (800 steps), freeze it, train rank-2 adapters on the query and value projections on names starting N–Z (500 steps), and compare base and adapted loss on both splits.
+- **Why this step here:** Every later step adapts or fine-tunes a small GPT, and LoRA is the cheapest way to change one: the base weights stay fixed and only two small matrices per adapted projection learn. It needs the forward pass and autograd from `microgpt.py`; the script carries its own copy of both.
+- **Run:** `python 02-alignment/microlora.py`
+- **Data:** `names.txt`, downloaded on first run and split by first letter.
+- **Links:** [source](02-alignment/microlora.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/lora.md) · [primary paper](https://arxiv.org/abs/2106.09685) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microlora.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/lora.md)
+- **Predict before you run:** The script adds `A @ (B @ x)` to each frozen projection, with `A` of shape 16×2 drawn from N(0, 0.02) and `B` of shape 2×16 set to zero. (1) How many trainable parameters does the results line report against the 4,192 base parameters? (2) On the first adaptation step, which of `A` and `B` receives a nonzero gradient?
+  <details><summary>Check your prediction</summary>
+
+  (1) `LoRA: 128 (3.1%)`: each adapter has 16×2 + 2×16 = 64 parameters, and there are two (query and value). (2) Only `B`. Because `B` starts at zero, `B @ x = 0`, so the gradient of `A` (the output-side factor) is zero; the gradient of `B` (the input-side factor) is `Aᵀ (∂L/∂y) xᵀ`, which is nonzero. Running the script's own adaptation loop for one step on an untrained base gave a summed absolute gradient of 0.0 for `A` and about 0.0105 for `B`: after the Adam update `B` had changed and `A` and the base weights had not. The LoRA paper initializes the other way round: it writes `W₀ + BA`, sets its output-side `B` (d×r) to zero and draws its input-side `A` (r×k) from a Gaussian, so there the output-side factor moves first. That is a different initialization, not the same one with the letters swapped.
+  </details>
+- **Limits:** No full fine-tuning is run: the "Full fine-tune" number in the results line is only the base parameter count, so nothing here shows that LoRA matches full fine-tuning. The adapter output is not scaled by α/r. The loss comparison is one run at rank 2 on one split.
 - **Time:** 35 min
 - [ ] Completed
 
 **2. `02-alignment/microqlora.py`**
-- **You'll learn:** How QLoRA combines 4-bit quantization of frozen weights with LoRA adapters, enabling fine-tuning of large models on memory-constrained hardware.
-- **Builds on:** `microlora` (LoRA mechanics), `microquant` (quantization concepts, optional but helpful).
-- **Key moment:** The double-quantization step — quantizing the quantization constants themselves to squeeze out additional memory savings.
+- **Outcome:** You pretrain a base model at full precision on 80% of the shuffled names (800 steps), quantize its attention and MLP weights to 4-bit NF4 levels in blocks of 8 with double-quantized INT8 scales, then train rank-2 adapters on the query and value projections on the other 20% (500 steps) and sample names.
+- **Why this step here:** It adds quantized frozen weights to the LoRA recipe from step 1. `03-systems/microquant.py` in Track 3 covers the quantization arithmetic in more depth; it helps but is not required.
+- **Run:** `python 02-alignment/microqlora.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](02-alignment/microqlora.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/qlora.md) · [primary paper](https://arxiv.org/abs/2305.14314) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microqlora.gif)
+- **Predict before you run:** Only the attention and MLP matrices are quantized (3,072 weights); each row is cut into blocks of 8 weights with one scale per block. What will the three memory lines and the compression ratio print?
+  <details><summary>Check your prediction</summary>
+
+  There are 384 blocks, so 384 scales. FP32: 3,072 × 4 = 12,288 bytes. NF4: 1,536 bytes of 4-bit codes + 384 × 4 = 1,536 scale bytes = 3,072 bytes. NF4 with double quantization: 1,536 + (384 × 1 + 4) = 1,924 bytes. Compression: 12,288 / 1,924 = 6.4x.
+  </details>
+- **Limits:** A one-layer, 16-dimensional toy: NF4 levels come from a normal-quantile approximation, blocks hold 8 weights instead of the 64 used in production, the embeddings and output head stay in full precision, and the adapter output is not scaled by α/r even though a docstring mentions it. Unlike `microlora.py`, the zero-initialized factor here is the output-side one, as in the LoRA paper, but the names are swapped: the code's `lora_B` (2×16) is the random input-side factor and `lora_A` (16×2) is the zero output-side factor.
 - **Time:** 35 min
 - [ ] Completed
 
 **3. `02-alignment/microdpo.py`**
-- **You'll learn:** How Direct Preference Optimization converts the RLHF objective into a simple classification loss over preferred vs dispreferred response pairs, eliminating the need for a separate reward model.
-- **Builds on:** `microgpt` (language model forward pass and loss computation).
-- **Key moment:** The DPO loss derivation — seeing how the Bradley-Terry preference model collapses into a binary cross-entropy loss that directly updates policy weights.
+- **Outcome:** You pretrain a base model (700 steps), freeze a copy as the reference policy, build up to 150 synthetic preference pairs that prefer a long completion (5+ characters) over a short one (3 or fewer) sharing the same 2–3 letter prefix, run 60 DPO steps with β = 0.1, and compare the average generated length of the reference and aligned models.
+- **Why this step here:** It changes a model from preference pairs with one supervised loss and no reward model, sampling or RL loop. It needs `microgpt.py`'s sequence log-probabilities. Steps 4 and 5 then show the reinforcement-learning route that DPO avoids.
+- **Run:** `python 02-alignment/microdpo.py`
+- **Data:** `names.txt`, downloaded on first run; the preference pairs are built from it by name length.
+- **Links:** [source](02-alignment/microdpo.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/dpo.md) · [primary paper](https://arxiv.org/abs/2305.18290) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdpo.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/dpo.md)
+- **Predict before you run:** At DPO step 1 the policy weights are still identical to the frozen reference. What will `dpo_loss` and the two mean rewards print?
+  <details><summary>Check your prediction</summary>
+
+  Every log-ratio `log π(y|x) − log π_ref(y|x)` is zero, so the margin is zero and each pair's loss is `log(1 + e⁰) = ln 2 ≈ 0.6931`; both mean rewards are 0.00 (floating-point rounding can leave a sign, as in `-0.00`). Calling the script's `dpo_loss` on eight pairs with the policy equal to its snapshot gave 0.69314718 for each pair and rewards within 4 × 10⁻¹⁶ of zero.
+  </details>
+- **Limits:** The preferences are a length rule, not human judgments. Each pair is scored as a whole sequence from the BOS token, prompt included; the shared prefix adds the same term to both log-ratios, so it cancels in the margin. The result is a shift in generated length on names; it does not show that DPO matches or beats RLHF, or that it replaces preference-data quality. The comment beside `DPO_BETA` describes β backwards: in the DPO paper β weights the KL penalty toward the reference, so a larger β keeps the policy closer to it and a smaller β lets it move further.
 - **Time:** 40 min
 - [ ] Completed
 
 **4. `02-alignment/microreinforce.py`**
-- **You'll learn:** How the REINFORCE algorithm estimates policy gradients using sampled trajectories and reward signals, forming the foundation of all policy gradient methods.
-- **Builds on:** `microgpt` (policy network architecture).
-- **Key moment:** The log-probability trick — multiplying the log-prob of each action by its reward creates a gradient that increases the probability of high-reward actions without ever differentiating through the reward function.
+- **Outcome:** You train a small policy network that emits 8-letter strings scored by hand-written rules, first with raw REINFORCE and then with an exponential-moving-average reward baseline, and compare gradient-norm variance, average reward and samples.
+- **Why this step here:** PPO in step 5 builds directly on the REINFORCE gradient, the log-probability of each sampled action weighted by the reward. The policy is a two-layer MLP over the previous letter and position, not a language model; from `microgpt.py` you need only the `Value` engine and softmax log-probabilities, which the script re-implements.
+- **Run:** `python 02-alignment/microreinforce.py`
+- **Data:** None to download; the policy samples letters from its own 26-letter vocabulary.
+- **Links:** [source](02-alignment/microreinforce.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/reinforce.md) · [primary paper](https://link.springer.com/article/10.1007/BF00992696) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microreinforce.gif)
+- **Predict before you run:** `generate_trajectory` has no stop action, so every sample is exactly `MAX_SEQ_LEN = 8` letters. Which reward rules can never fire, and what is the highest reward a sample can actually earn?
+  <details><summary>Check your prediction</summary>
+
+  The 4–6 letter bonus (+1) and the short-sequence penalty (−2) never apply. The best reachable reward is 1 (vowel first) + 1 (consonant last) + 2.5 (all five vowels) = 4.5, not the "~5.5" the script prints; the script's own `compute_reward` returns 4.5 for `aeioubcd` and gives 5.5 only to a 6-letter string such as `aeiouz`, which the sampler cannot produce.
+  </details>
+- **Limits:** A toy reward on letter strings with one random seed; the variance comparison comes from gradient norms sampled every 10 episodes in one run.
 - **Time:** 35 min
 - [ ] Completed
 
 **5. `02-alignment/microppo.py`**
-- **You'll learn:** How Proximal Policy Optimization clips the policy ratio to prevent destructively large updates, making reinforcement learning stable enough for language model training.
-- **Builds on:** `microreinforce` (REINFORCE baseline), `microgpt` (model architecture).
-- **Key moment:** The clipped surrogate objective — the min-of-two-terms construction that lets the model improve but never stray too far from the previous policy in a single step.
+- **Outcome:** You pretrain a smaller GPT (8-dimensional, 2 heads, 500 steps), train an MLP reward model on synthetic pairs that prefer 4–7 letter names, then run 100 policy updates with a clipped surrogate objective, a squared log-ratio penalty against the pretrained policy (coefficient 0.5) and a linear value baseline, and compare rewards and samples before and after.
+- **Why this step here:** It is the full RLHF loop — pretrain, reward model, policy optimisation — built from the REINFORCE gradient of step 4 plus a learned baseline and a penalty that keeps the policy near its starting point. DPO (step 3) reaches a related objective without the reward model and sampling.
+- **Run:** `python 02-alignment/microppo.py`
+- **Data:** `names.txt`, downloaded on first run; the preference pairs are built from it by name length.
+- **Links:** [source](02-alignment/microppo.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/ppo.md) · [primary paper](https://arxiv.org/abs/1707.06347) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microppo.gif)
+- **Predict before you run:** Each step samples 4 completions, records their log-probabilities as `old_logp` from the current weights, and then makes exactly one gradient update. What is the ratio `π_new / π_old` inside that update, and does the clip at [0.8, 1.2] ever change the objective?
+  <details><summary>Check your prediction</summary>
+
+  The ratio is `exp(0) = 1` for every sample, because `old_logp` and the current log-probability come from the same weights; the script's two log-probability functions agreed to within 4 × 10⁻¹⁵ on sampled completions. A ratio of 1 is inside [0.8, 1.2], so the clip never binds here and the update is an advantage-weighted policy gradient plus the penalty. Clipping only matters when one batch is reused for several updates, which this script does not do.
+  </details>
+- **Limits:** The preferences are synthetic, and the reward adds an explicit length bonus on top of the learned reward model. The printed `kl_div` is the mean absolute difference between policy and reference sequence log-probabilities, not a KL estimate. The reward model (an MLP) and the value function (a linear model) use plain floats and hand-written SGD, not autograd.
 - **Time:** 35 min
 - [ ] Completed
 
