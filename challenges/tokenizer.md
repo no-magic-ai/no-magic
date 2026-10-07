@@ -15,7 +15,7 @@ Test your understanding of Byte-Pair Encoding by predicting what happens in thes
 
 **Answer:** The output is `[new, a]`. A right-to-left scan would produce `[a, new]`.
 
-**Why:** The left-to-right scan consumes position 0 and 1 (producing `new`) and then increments `i` by 2, landing at position 2. Position 2 is the leftover `a`, which cannot form a pair with nothing. The comment on line 71 explicitly states "Overlapping pairs resolve left-to-right." This determinism is essential: if the merge direction were data-dependent, the same string could tokenize differently on different runs, breaking the invariant that tokenization is a pure function of the input string.
+**Why:** The left-to-right scan consumes position 0 and 1 (producing `new`) and then increments `i` by 2, landing at position 2. Position 2 is the leftover `a`, which cannot form a pair with nothing. The docstring on lines 69-71 explicitly states "Overlapping pairs resolve left-to-right." This determinism is essential: if the merge direction were data-dependent, the same string could tokenize differently on different runs, breaking the invariant that tokenization is a pure function of the input string.
 
 **Script reference:** `01-foundations/microtokenizer.py`, lines 66-85 (`apply_merge`, especially lines 79-84 and the comment on lines 70-75)
 
@@ -89,9 +89,9 @@ Test your understanding of Byte-Pair Encoding by predicting what happens in thes
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** It triggers when the entire corpus is compressed into a single token — there are no adjacent pairs left. On names.txt with 256 merges, it will NOT trigger because 256 merges is far fewer than what's needed to fully collapse a 200K+ byte corpus.
+**Answer:** It triggers when the entire corpus is compressed into a single token — there are no adjacent pairs left. On names.txt with 256 merges, it will NOT trigger because 256 merges is far fewer than what's needed to fully collapse a 228,145-byte corpus.
 
-**Why:** After each merge, the corpus shrinks because each pair occurrence is replaced by a single token. Full collapse requires enough merges to reduce the corpus to one token — roughly O(n) merges for a corpus of length n. names.txt has ~200,000 bytes. 256 merges reduces it by at most 256 rounds of pair elimination, leaving tens of thousands of tokens. The collapse check is a defensive guard for cases like a corpus consisting of a single unique byte repeated many times (e.g., `[65, 65, 65, 65]` → 2 merges to fully collapse), not for realistic corpora.
+**Why:** After each merge, the corpus shrinks because each pair occurrence is replaced by a single token. Full collapse requires enough merges to reduce the corpus to one token, and the final token must spell out the whole corpus. Each merge adds one token to the vocabulary, so for text without long exact repeats this takes on the order of n merges for a corpus of length n. names.txt has 228,145 bytes of 32,033 names, so 256 rounds of pair elimination leave it far from a single token. The collapse check is a defensive guard for cases like a corpus consisting of a single unique byte repeated many times (e.g., `[65, 65, 65, 65]` → 2 merges to fully collapse), not for realistic corpora.
 
 **Script reference:** `01-foundations/microtokenizer.py`, lines 104-116 (training loop with collapse check), lines 55-63 (get_pair_counts, which returns empty Counter when only 1 token remains)
 

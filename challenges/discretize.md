@@ -16,16 +16,16 @@ Test your understanding of SSM discretization methods by predicting what happens
 **Answer:**
 
 - `delta = 3.0`: `|1 + 3.0 * (-0.5)| = |1 - 1.5| = |-0.5| = 0.5` -- stable.
-- `delta = 4.0`: `|1 + 4.0 * (-0.5)| = |1 - 2.0| = |-1.0| = 1.0` -- marginal stability boundary. The state oscillates in sign each step but neither grows nor decays.
+- `delta = 4.0`: `|1 + 4.0 * (-0.5)| = |1 - 2.0| = |-1.0| = 1.0` -- marginal stability boundary. The state oscillates in sign each step but neither grows nor decays. The script's table tests `|A_bar| < 1` strictly, so it labels this row `NO — DIVERGES`.
 - `delta = 5.0`: `|1 + 5.0 * (-0.5)| = |1 - 2.5| = |-1.5| = 1.5 > 1` -- diverges. Each step amplifies the state by 1.5x while flipping sign.
 
 The stability boundary is at `delta = -2/a_n = -2/(-0.5) = 4.0`. Any `delta > 4.0` causes Euler to diverge.
 
 ZOH at `delta = 5.0`: `exp(5.0 * (-0.5)) = exp(-2.5) ≈ 0.082` -- unconditionally stable regardless of step size.
 
-**Why:** Euler's linear approximation `1 + delta * a_n` can overshoot into negative territory and exceed magnitude 1.0, creating oscillatory divergence. The ZOH exponential `exp(delta * a_n)` maps the continuous-time stable region (negative real axis) into the discrete-time stable region (unit disk) exactly, preserving stability for any step size. This is the fundamental reason production SSMs (S4, Mamba) use ZOH over Euler.
+**Why:** Euler's linear approximation `1 + delta * a_n` can overshoot into negative territory and exceed magnitude 1.0, creating oscillatory divergence. The ZOH exponential `exp(delta * a_n)` maps the continuous-time stable region (negative real axis) into the discrete-time stable region (unit disk) exactly, preserving stability for any step size. This is why production SSMs avoid forward Euler: Mamba uses ZOH, and S4 uses the bilinear (Tustin) method, which also maps the stable half-plane into the unit disk (the comment on lines 264-267 of `microssm.py` notes the S4 choice).
 
-**Script reference:** `03-systems/microdiscretize.py`, stability analysis section and Euler discretization function
+**Script reference:** `03-systems/microdiscretize.py`, lines 322-349 (`euler_discretize`), lines 744-783 (stability analysis table)
 
 </details>
 
@@ -45,9 +45,9 @@ ZOH at `delta = 5.0`: `exp(5.0 * (-0.5)) = exp(-2.5) ≈ 0.082` -- unconditional
 - `alpha = 1.0`: All weight on `x_t`, zero weight on `x_{t-1}`. The `x_{t-1}` dependency vanishes, and the method recovers ZOH exactly -- a purely causal recurrence with no implicit look-back.
 - `alpha = 0.0`: All weight on `x_{t-1}`, zero weight on `x_t`. The method becomes fully implicit -- the current input has no direct effect, and the system responds with a one-step delay.
 
-**Why:** The `alpha = 0.5` split creates an implicit dependence on `x_{t-1}` within the recurrence itself. This implicit convolution over adjacent inputs is what allows Mamba-3 to remove the explicit short convolution (`conv1d`) that Mamba-1 and Mamba-2 required as a separate module. The trapezoidal method bakes a 2-tap filter directly into the discretization, achieving the same local context mixing without a separate convolution layer.
+**Why:** The `alpha = 0.5` split creates an implicit dependence on `x_{t-1}` within the recurrence itself: the input enters through a 2-tap filter over adjacent inputs. The script's docstring (lines 395-415), citing Mamba-3 (arXiv:2603.15569), presents this as the reason Mamba-3 can drop the separate short convolution (`conv1d`) that Mamba-1 and Mamba-2 place before the SSM. The script's own rule splits the ZOH input integral between the two inputs; check the Mamba-3 paper for the exact coefficients it uses.
 
-**Script reference:** `03-systems/microdiscretize.py`, trapezoidal discretization function (alpha parameter and x\_{t-1} weighting)
+**Script reference:** `03-systems/microdiscretize.py`, lines 395-447 (`trapezoidal_discretize`, the alpha parameter and the x\_{t-1} weighting)
 
 </details>
 
@@ -74,6 +74,6 @@ Euler's `1 + delta * a_n` fails on both counts:
 
 **Why:** The matrix exponential is the mathematically exact solution to the continuous-time ODE, sampled at discrete points. It maps the stable continuous-time half-plane (`Re(s) < 0`) perfectly into the stable discrete-time unit disk (`|z| < 1`). Euler is a first-order Taylor approximation of this exponential (`exp(x) ≈ 1 + x`), and like all polynomial approximations of the exponential, it diverges for large arguments. This is not a minor numerical issue -- it is a fundamental limitation that makes Euler unusable for large step sizes in SSMs.
 
-**Script reference:** `03-systems/microdiscretize.py`, ZOH discretization function and stability comparison output
+**Script reference:** `03-systems/microdiscretize.py`, lines 350-394 (`zoh_discretize`), lines 744-783 (stability comparison output)
 
 </details>

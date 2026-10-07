@@ -13,9 +13,9 @@ Test your understanding of contrastive embedding learning by predicting what hap
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** Training would likely collapse, not improve. `TEMPERATURE = 0` is undefined (division by zero).
+**Answer:** Training would become unstable rather than faster. `TEMPERATURE = 0` is undefined (division by zero).
 
-**Why:** Dividing similarities by a very small temperature amplifies small differences between similarity scores to extreme values. Before training, embeddings are random, so the positive pair is unlikely to have the highest similarity in the batch. With tau=0.001, the softmax becomes a near-step-function: the single highest similarity gets all the probability mass, and `exp_pos / denom` approaches 0 if the positive isn't the maximum. The loss becomes `-log(~0) = large`, with near-infinite gradients that destabilize the weight matrix. The log-sum-exp trick at line 254-257 prevents numerical overflow, but the gradient magnitudes remain catastrophically large. Temperature 0.1 is the SimCLR default precisely because it provides strong-but-stable gradient signal.
+**Why:** Dividing similarities by a very small temperature amplifies small differences between similarity scores to extreme values. Before training, embeddings are random, so the positive pair is unlikely to have the highest similarity in the batch. With tau=0.001, the softmax becomes a near-step-function: the single highest similarity gets all the probability mass, and `exp_pos / denom` approaches 0 if the positive isn't the maximum. The loss becomes `-log(~0) = large`, with near-infinite gradients that destabilize the weight matrix. The max-subtraction at lines 255-257 prevents numerical overflow, but the gradients carry a `1 / temperature` factor (lines 270-280), so at 0.001 they are 100 times larger than at 0.1 for the same learning rate. The script's comment calls 0.1 standard in SimCLR; it is a value that keeps that factor moderate.
 
 **Script reference:** `01-foundations/microembedding.py`, lines 37 (TEMPERATURE), lines 244-261 (InfoNCE loss computation), lines 254-258 (log-sum-exp stability trick)
 
@@ -34,7 +34,7 @@ Test your understanding of contrastive embedding learning by predicting what hap
 
 **Answer:** The gradient pushes the embeddings of the two "anna" samples apart — even though they should be close. This is the "false negative" problem in contrastive learning, and it degrades representation quality, especially when the dataset has many duplicates.
 
-**Why:** The loss on line 261 (`-log(exp_pos / denom)`) is minimized by making `exp_pos` large and the denominator small. The denominator includes `exp(sim(anna_3, anna_47) / tau)`. To minimize the loss for sample 3, the gradient pushes `sim(anna_3, anna_47)` down — treating anna_47 as a distractor to avoid. In production contrastive learning (SimCLR, MoCo), this is addressed with "false negative dequeuing" or constructing batches with known negative pairs. This script uses random shuffling (line 306), so same-name collisions occur but are rare enough (5000 names, 64 per batch) that their average effect is small.
+**Why:** The loss on line 261 (`-log(exp_pos / denom)`) is minimized by making `exp_pos` large and the denominator small. The denominator includes `exp(sim(anna_3, anna_47) / tau)`. To minimize the loss for sample 3, the gradient pushes `sim(anna_3, anna_47)` down — treating anna_47 as a distractor to avoid. Larger systems mitigate it by deduplicating batches or by detecting and down-weighting likely false negatives. This script uses random shuffling (line 306) and does neither; `names.txt` does contain repeated names (32,033 lines, 29,494 distinct), so collisions within a 64-name batch can occur.
 
 **Script reference:** `01-foundations/microembedding.py`, lines 39 (BATCH_SIZE), lines 247-281 (negative computation in InfoNCE), lines 303-313 (batch construction via shuffle)
 
@@ -53,7 +53,7 @@ Test your understanding of contrastive embedding learning by predicting what hap
 
 **Answer:** For short names, `augment` returns the identical string. The positive pair is `("jo", "jo")`, so `cosine_similarity(anchor_emb, positive_emb) = 1.0` (identical vectors after identical encoding). The loss pushes this pair's similarity toward 1, which is correct — but the model receives no invariance training for short names.
 
-**Why:** When anchor and positive are the same string, their n-gram encodings are identical, their raw embeddings are identical, and their normalized embeddings are identical. The cosine similarity is 1.0, so `exp(1.0 / tau)` dominates the numerator. The loss is already near-minimal (`-log(1/1) = 0` if no negatives were similar). The model effectively gets a "free" near-zero loss for short names without learning to be robust to perturbations. This is a deliberate simplification noted in the comment: augmenting single or two-character names risks producing empty strings or single characters that are linguistically meaningless.
+**Why:** When anchor and positive are the same string, their n-gram encodings are identical, their raw embeddings are identical, and their normalized embeddings are identical. The cosine similarity is 1.0, so `exp(1.0 / tau)` dominates the numerator. The loss for that sample is low whenever the negatives are dissimilar, because the denominator is dominated by the positive term. The model effectively gets a "free" near-zero loss for short names without learning to be robust to perturbations. The guard is a deliberate simplification ("too short to augment safely", line 121): deleting a character from a two-letter name would leave a single letter.
 
 **Script reference:** `01-foundations/microembedding.py`, lines 112-132 (`augment` function), lines 119-121 (short name guard), lines 326-337 (anchor and positive encoding in training loop)
 
@@ -70,9 +70,9 @@ Test your understanding of contrastive embedding learning by predicting what hap
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** Training continues, but the embeddings will likely collapse — all names converge to the same direction on the unit sphere, making similarity meaningless.
+**Answer:** Training still runs, but the updates no longer follow the loss. The loss depends only on the normalized embedding `e = z / ||z||`, so any change to `z` along its own direction `e` leaves the loss unchanged; the pass-through keeps exactly that radial part and also drops the `1 / ||z||` scale. Whether this ends in collapse is not settled by the script: its comment (lines 190-193) warns of collapse, but no run in the repository compares the two versions.
 
-**Why:** Without the normalization Jacobian, gradients include a radial component that pushes all embeddings in the same global direction. Consider: if every embedding gets a small positive gradient in the same dimension, all embeddings drift toward the same region of the sphere. After normalization to unit length, they all end up at the same point. The collapse happens because the InfoNCE gradient for the positive pair pushes anchor toward positive and positive toward anchor — but without the Jacobian projection, this push has a radial component that all embeddings share. The normalization Jacobian (line 197-199) explicitly removes this radial component, leaving only tangential gradients that change direction but not magnitude, keeping embeddings spread across the sphere.
+**Why:** Check the formula on a gradient that points straight along `e`: with `g = c * e`, `g - e * dot(g, e) = c * e - c * e = 0`, so the correct gradient with respect to `z` is zero — stretching `z` does not change `e`. The pass-through would instead push `z` along `e` with size `c`. Each embedding's radial part points along its own direction, and all of them flow into the shared projection matrix `W` (lines 352-363), so `W` receives updates that do not reduce the loss and the useful tangential part is mis-scaled by a factor of `||z||`. The projection on line 199 removes the radial part and applies the `1 / ||z||` factor, which is what the chain rule through `e = z / ||z||` requires.
 
 **Script reference:** `01-foundations/microembedding.py`, lines 180-199 (`grad_through_norm`), lines 190-193 (why comment), lines 352-363 (gradient application in training loop)
 

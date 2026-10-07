@@ -6,7 +6,7 @@ Test your understanding of autoregressive language modeling by predicting what h
 
 ### Challenge 1: Context Window Overflow
 
-**Setup:** The model has `BLOCK_SIZE = 16` (line 38). During training, sequences are truncated: `seq_len = min(BLOCK_SIZE, len(tokens) - 1)` (line 458). During inference, the generation loop runs `for pos in range(BLOCK_SIZE)` (line 539).
+**Setup:** The model has `BLOCK_SIZE = 16` (line 38). During training, sequences are truncated: `seq_len = min(BLOCK_SIZE, len(tokens) - 1)` (line 472). During inference, the generation loop runs `for pos in range(BLOCK_SIZE)` (line 553).
 
 **Question:** If a name in the training data produces a token sequence of length 20 (after adding BOS tokens), how many tokens does the model actually train on? During inference, what limits the maximum generated name length?
 
@@ -15,9 +15,9 @@ Test your understanding of autoregressive language modeling by predicting what h
 
 **Answer:** The model trains on the first 16 tokens (positions 0-15), predicting tokens at positions 1-16. The last 3 tokens of the 20-token sequence are never seen. During inference, generation stops after at most 16 characters (BLOCK_SIZE positions), or earlier if the model produces a BOS token (end-of-name signal).
 
-**Why:** The truncation on line 458 caps `seq_len` at `BLOCK_SIZE = 16`. The training loop (lines 466-480) iterates `for pos in range(seq_len)`, processing input tokens 0 through 15 and predicting targets 1 through 16. The position embedding table `wpe` only has 16 rows (line 212), so there is no embedding for position 16 or beyond -- the model physically cannot represent longer contexts. Production GPTs handle this with techniques like RoPE (rotary position embeddings) that generalize beyond the training context length, but this implementation uses learned absolute position embeddings that are fixed at initialization.
+**Why:** The truncation on line 472 caps `seq_len` at `BLOCK_SIZE = 16`. The training loop (lines 480-497) iterates `for pos in range(seq_len)`, processing input tokens 0 through 15 and predicting targets 1 through 16. The position embedding table `wpe` only has 16 rows (line 212), so there is no embedding for position 16 or beyond -- the model physically cannot represent longer contexts. Production GPTs set a much larger context and some replace the learned table with rotary position embeddings (RoPE), which have no fixed table size; that removes the hard limit but does not by itself guarantee good behaviour beyond the trained length. This implementation uses a learned absolute position table with exactly 16 rows.
 
-**Script reference:** `01-foundations/microgpt.py`, lines 38 (BLOCK_SIZE), 212 (wpe initialization), 457-458 (truncation), 539 (inference loop)
+**Script reference:** `01-foundations/microgpt.py`, lines 38 (BLOCK_SIZE), 212 (wpe initialization), 472 (truncation), 553 (inference loop)
 
 </details>
 
@@ -44,7 +44,7 @@ Test your understanding of autoregressive language modeling by predicting what h
 
 ### Challenge 3: Learning Rate Extremes
 
-**Setup:** The training loop uses Adam with linear learning rate decay: `lr_t = LEARNING_RATE * (1 - step / NUM_STEPS)` (line 493). The default `LEARNING_RATE = 0.01` (line 42).
+**Setup:** The training loop uses Adam with linear learning rate decay: `lr_t = LEARNING_RATE * (1 - step / NUM_STEPS)` (line 507). The default `LEARNING_RATE = 0.01` (line 42).
 
 **Question:** If you set `LEARNING_RATE = 0.0`, what happens to the model? If you set `LEARNING_RATE = 10.0`, what happens? In neither case does the program crash -- why?
 
@@ -56,9 +56,9 @@ Test your understanding of autoregressive language modeling by predicting what h
 - `LEARNING_RATE = 0.0`: All parameter updates are zero. The model generates purely from its random initialization, producing gibberish character sequences. The loss remains at approximately `-log(1/VOCAB_SIZE)` (uniform prediction).
 - `LEARNING_RATE = 10.0`: Parameters overshoot wildly on every step. Logits explode to extreme values, softmax saturates, and the loss oscillates or grows. The model generates repetitive or degenerate sequences.
 
-**Why:** The program doesn't crash because `safe_log` (line 280) clamps probabilities to `1e-10` before taking the log, preventing `-inf`. The softmax (line 250) subtracts the max logit before `exp()`, preventing overflow. These numerical stability guards keep the computation finite even when parameters diverge. However, with `lr=10.0`, the Adam bias-corrected updates `lr * m_hat / (sqrt(v_hat) + eps)` on line 511 become enormous, pushing weights far from any useful configuration. The model still produces valid probability distributions (softmax always sums to 1), but the distributions are meaningless.
+**Why:** The program doesn't crash because `safe_log` (line 280) clamps probabilities to `1e-10` before taking the log, preventing `-inf`. The softmax (line 249) subtracts the max logit before `exp()`, preventing overflow. These numerical stability guards keep the computation finite even when parameters diverge. However, with `lr=10.0`, the Adam bias-corrected updates `lr * m_hat / (sqrt(v_hat) + eps)` on line 525 become enormous, pushing weights far from any useful configuration. The model still produces valid probability distributions (softmax always sums to 1), but the distributions are meaningless.
 
-**Script reference:** `01-foundations/microgpt.py`, lines 42 (LEARNING_RATE), 280-295 (safe_log), 250-262 (softmax stability), 493-511 (optimizer update)
+**Script reference:** `01-foundations/microgpt.py`, lines 42 (LEARNING_RATE), 280-295 (safe_log), 249-262 (softmax stability), 507-525 (optimizer update)
 
 </details>
 
@@ -75,9 +75,9 @@ Test your understanding of autoregressive language modeling by predicting what h
 
 **Answer:** The model would reliably generate "anna" (or close variants), but the loss would not reach exactly zero. It would converge to a small positive value.
 
-**Why:** With one training example, the model memorizes the sequence `[BOS, a, n, n, a, BOS]`. At convergence, it assigns high probability to each correct next token, but softmax can never output exactly 1.0 for any class -- it can only approach it asymptotically as logits go to infinity. The loss `-log(p(target))` approaches 0 as `p(target)` approaches 1, but never reaches it. Additionally, position 0 must predict 'a' given BOS (learnable), position 2 must predict 'n' given 'n' at position 1 (ambiguous: the model sees the same context at positions 1 and 2 but must predict 'n' then 'a'). The model resolves this via positional embeddings (`wpe`), which distinguish position 2 from position 3 even when the token embedding is the same.
+**Why:** With one training example, the model memorizes the sequence `[BOS, a, n, n, a, BOS]`. At convergence, it assigns high probability to each correct next token, but softmax can never output exactly 1.0 for any class -- it can only approach it asymptotically as logits go to infinity. The loss `-log(p(target))` approaches 0 as `p(target)` approaches 1, but never reaches it. The same input token also appears with different targets: `n` at position 2 must predict `n` and `n` at position 3 must predict `a`, while `a` at position 1 predicts `n` and `a` at position 4 predicts BOS. The model can still separate these cases because each position attends to a different prefix through the key/value cache and adds a different position embedding (`wpe`).
 
-**Script reference:** `01-foundations/microgpt.py`, lines 209-212 (wpe embedding), 328-330 (tok_emb + pos_emb addition), 466-480 (training loop)
+**Script reference:** `01-foundations/microgpt.py`, lines 209-212 (wpe embedding), 328-330 (tok_emb + pos_emb addition), 463-500 (training loop)
 
 </details>
 
@@ -94,8 +94,8 @@ Test your understanding of autoregressive language modeling by predicting what h
 
 **Answer:** At position 5, the cache contains 6 keys (positions 0 through 5). The model never attends to future tokens. Pre-filling the cache with random vectors would inject noise that the model treats as legitimate past context.
 
-**Why:** The cache starts empty (`keys = [[] for _ in range(N_LAYER)]`, line 461), and each call to `gpt_forward` appends exactly one key and value. At position `t`, the cache has `t+1` entries. The attention loop on line 373 computes `range(len(k_head))` which is `t+1`, covering positions 0 through t. Future positions haven't been appended yet, so they're invisible -- this is how the KV cache provides causal masking without an explicit triangular mask matrix (noted in the comment on lines 389-393). If you pre-filled the cache with garbage vectors, the model would attend to them as if they were real past tokens, corrupting the attention-weighted sum and producing degraded outputs.
+**Why:** The cache starts empty (`keys = [[] for _ in range(N_LAYER)]`, line 475), and each call to `gpt_forward` appends exactly one key and value. At position `t`, the cache has `t+1` entries. The attention loop on line 373 computes `range(len(k_head))` which is `t+1`, covering positions 0 through t. Future positions haven't been appended yet, so they're invisible -- this is how the KV cache provides causal masking without an explicit triangular mask matrix (noted in the comment on lines 389-393). If you pre-filled the cache with garbage vectors, the model would attend to them as if they were real past tokens, corrupting the attention-weighted sum and producing degraded outputs.
 
-**Script reference:** `01-foundations/microgpt.py`, lines 354-355 (cache append), 371-374 (attention over cache), 389-393 (causal masking comment), 461-462 (cache initialization)
+**Script reference:** `01-foundations/microgpt.py`, lines 354-355 (cache append), 371-374 (attention over cache), 389-393 (causal masking comment), 475-476 (cache initialization)
 
 </details>
