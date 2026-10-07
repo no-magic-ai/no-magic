@@ -361,15 +361,15 @@ See [`challenges/README.md`](challenges/README.md) for the full challenge set.
 Anki-compatible flashcard decks for spaced repetition review. 190 cards across 4 tiers (foundations, alignment, systems, agents), covering key concepts, equations, and design decisions from every script.
 
 ```bash
-# Generate the Anki deck
-python resources/flashcards/generate_anki.py
+# Generate the Anki decks (needs the genanki package)
+uv run --no-project --with genanki python resources/flashcards/generate_anki.py
 ```
 
-See [`resources/flashcards/`](resources/flashcards/) for the raw card data and generation script.
+The script writes `no-magic-foundations.apkg`, `no-magic-alignment.apkg`, `no-magic-systems.apkg` and a combined `no-magic-complete.apkg` (170 cards) next to itself; `agents.csv` (20 cards) is not exported. Anki renders card fields as HTML, so card text writes inequalities as `&lt;` and `&gt;` and inner products with `⟨ ⟩`. See [`resources/flashcards/`](resources/flashcards/) for the raw card data and generation script.
 
 ### Learning Path
 
-Structured tracks for different goals — 7 learning tracks ranging from weekend sprints to a full curriculum. Each track orders scripts by conceptual dependency and includes time estimates, prerequisites, and milestone markers.
+Structured tracks for different goals — 7 learning tracks ranging from weekend sprints to a full curriculum. Each track orders scripts by conceptual dependency and includes time estimates, prerequisites, and milestone markers. In the Transformer, Alignment and Modern Inference tracks every step also gives its exact command, data needs, source/paper/preview links, a predict-before-run question with a checked answer and the limits of what the program shows.
 
 See [`LEARNING_PATH.md`](LEARNING_PATH.md) for the full guide.
 
