@@ -21,11 +21,11 @@ After `[1, 1, 1]` with `A = 0.9`, `B = 1.0`:
 - `h_2 = 0.9 * 1.0 + 1.0 * 1 = 1.9`
 - `h_3 = 0.9 * 1.9 + 1.0 * 1 = 2.71`
 
-The state monotonically accumulates. It never flips sign. XOR requires a sign flip (180-degree rotation) on each 1-bit: the correct parity alternates odd/even/odd. With a positive real eigenvalue, the state is trapped in the positive half-line -- it can only count, not alternate. The real-only model achieves ~50% accuracy on parity, equivalent to random guessing.
+The state monotonically accumulates. It never flips sign. XOR requires a sign flip (180-degree rotation) on each 1-bit: the correct parity alternates odd/even/odd. With a positive real eigenvalue, each state dimension responds to a 1-bit with the same sign every time -- it can count, but not alternate. How close the trained real-only model's test accuracy lands to chance is what Phase 5 of the script reports for its run.
 
 **Why:** The fundamental issue is that positive reals form a multiplicative group that cannot represent negation. XOR is isomorphic to addition modulo 2, which requires a group element of order 2 (something that squares to the identity but isn't the identity itself). The only real number satisfying `a^2 = 1, a != 1` is `a = -1`, but `exp(log_A)` is always positive.
 
-**Script reference:** `03-systems/microcomplexssm.py`, real-only SSM implementation and parity task evaluation
+**Script reference:** `03-systems/microcomplexssm.py`, lines 400-416 (`init_real_only_params`), lines 465-493 (`forward_real_only`, `a_n = exp(log_A_n)`), lines 157-176 (running-parity data)
 
 </details>
 
@@ -52,9 +52,9 @@ Applied to `[1, 0]`: `[-1, 0]`. The state is negated -- a perfect sign flip.
 
 Applied twice: `R(pi) * R(pi) = (-I)(-I) = I`. The state returns to `[1, 0]`.
 
-**Why:** This is exactly XOR in geometric form. Each 1-bit triggers a pi-rotation that negates the state. Two consecutive 1-bits: negate then negate again, returning to the original -- which matches `1 XOR 1 = 0`. Three 1-bits: three negations yield a net negation -- matching `1 XOR 1 XOR 1 = 1`. The complex plane provides the algebraic structure (a rotation group containing elements of order 2) that the positive reals lack. This is why the complex SSM solves parity perfectly while the real-only version cannot.
+**Why:** This is exactly XOR in geometric form. Each 1-bit triggers a pi-rotation that negates the state. Two consecutive 1-bits: negate then negate again, returning to the original -- which matches `1 XOR 1 = 0`. Three 1-bits: three negations yield a net negation -- matching `1 XOR 1 XOR 1 = 1`. The complex plane provides the algebraic structure (a rotation group containing elements of order 2) that the positive reals lack. This is why a rotating state can represent running parity exactly (rotate by π on every 1-bit) while a positive real decay cannot. The script initializes every rotation angle near π (`theta ~ N(π, 0.3)`, lines 432 and 453), so the rotation variants start close to that solution.
 
-**Script reference:** `03-systems/microcomplexssm.py`, complex SSM recurrence and 2x2 rotation matrix decomposition
+**Script reference:** `03-systems/microcomplexssm.py`, lines 236-276 (`complex_ssm_forward` with Python complex numbers), lines 278-314 (`rope_ssm_forward` with 2x2 rotations), lines 316-385 (equivalence check)
 
 </details>
 
@@ -75,6 +75,6 @@ In RoPE at `position = 0`, the rotation is also identity (`cos(0) = 1`, `sin(0) 
 
 **Why:** The key difference is selectivity. RoPE rotates at every position unconditionally -- it encodes where a token is, not what it is. The data-dependent rotation fires only when the input triggers it -- it encodes what the input is, selectively. For the parity task, this means the state rotates by pi only when a 1-bit arrives and holds steady (just decaying) when a 0-bit arrives. This selective gating is what makes the complex SSM input-dependent in the same spirit as Mamba's selection mechanism, while RoPE provides a fixed positional encoding that cannot adapt to input content.
 
-**Script reference:** `03-systems/microcomplexssm.py`, data-dependent theta computation and comparison with position-dependent rotation
+**Script reference:** `03-systems/microcomplexssm.py`, lines 494-540 (`forward_complex`, `eff_theta = theta * x_t`), lines 541-583 (`forward_rope`, the same update written as a rotation), lines 740-750 (comparison notes)
 
 </details>

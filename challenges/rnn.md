@@ -34,7 +34,7 @@ Test your understanding of vanilla RNNs and GRUs by predicting what happens in t
 
 **Answer:** `dh_T/dh_0 = 1` (identity). The gradient flows without decay across all timesteps.
 
-**Why:** When z_t = 0, `h_t = h_{t-1}` exactly (no update). Therefore `dh_t/dh_{t-1} = 1`. Chaining T such derivatives: `dh_T/dh_0 = 1^T = 1`. This is the "gradient highway" — the identity connection completely bypasses weight matrices. The vanilla RNN's recurrence is `h_t = tanh(W_hh @ h_{t-1} + ...)`, so `dh_t/dh_{t-1}` always involves `W_hh`, causing exponential decay. The GRU's interpolation structure creates a path where the gradient can bypass `W_hh` entirely when the update gate saturates near zero. In practice, the gate learns to close (z ≈ 0) during "holding" timesteps and open (z ≈ 1) during "updating" timesteps, selectively propagating gradient only when needed.
+**Why:** When z_t = 0, `h_t = h_{t-1}` exactly (no update). Therefore `dh_t/dh_{t-1} = 1`. Chaining T such derivatives: `dh_T/dh_0 = 1^T = 1`. This is the "gradient highway" — the identity connection completely bypasses weight matrices. The vanilla RNN's recurrence is `h_t = tanh(W_hh @ h_{t-1} + ...)`, so `dh_t/dh_{t-1}` always involves `W_hh`, causing exponential decay. The GRU's interpolation structure creates a path where the gradient can bypass `W_hh` entirely when the update gate saturates near zero. A trained gate can approach this by staying near 0 on steps where the state should be held and near 1 where it should be overwritten; a sigmoid never reaches exactly 0, so in a real run the factor is close to, not exactly, 1.
 
 **Script reference:** `01-foundations/micrornn.py`, lines 341-364 (GRU forward pass), lines 358-364 (interpolation with gradient highway comment), lines 621-627 (explanation in comparison output)
 
@@ -53,7 +53,7 @@ Test your understanding of vanilla RNNs and GRUs by predicting what happens in t
 
 **Answer:** The ratio is `first/last` because `gradient_norms[0]` is the norm at timestep 0 (furthest from the loss, computed last in BPTT), and `gradient_norms[-1]` is the norm at the final timestep (closest to the loss, computed first in BPTT). A ratio less than 1 means gradients are smaller at earlier timesteps — the gradient has decayed traveling backwards through the sequence.
 
-**Why:** Loss is computed at the final timestep. Backward pass flows from last to first. `gradient_norms[-1]` (last hidden state, first computed in backward) has the largest gradient because it's one step from the loss. `gradient_norms[0]` (first hidden state, last computed in backward) has the smallest gradient because it's T steps from the loss. The ratio `norms[0] / norms[-1]` measures how much gradient is left at the beginning relative to the end. A ratio near 0 means almost no gradient signal reaches the early timesteps — the model cannot learn long-range dependencies. For vanilla RNN this ratio is often < 0.01; for GRU it is typically > 0.1 due to gradient highways.
+**Why:** Loss is computed at the final timestep. Backward pass flows from last to first. `gradient_norms[-1]` (last hidden state, first computed in backward) has the largest gradient because it's one step from the loss. `gradient_norms[0]` (first hidden state, last computed in backward) has the smallest gradient because it's T steps from the loss. The ratio `norms[0] / norms[-1]` measures how much gradient is left at the beginning relative to the end. A ratio near 0 means almost no gradient signal reaches the early timesteps — the model cannot learn long-range dependencies. The script's printed guide reads < 0.01 as severe vanishing and > 0.1 as an active gradient highway; which band each model lands in is a property of the particular run, measured on one sequence.
 
 **Script reference:** `01-foundations/micrornn.py`, lines 496-516 (gradient norm computation and ratio), lines 511-516 (ratio interpretation), lines 612-616 (comparison table displaying ratio)
 
@@ -63,18 +63,18 @@ Test your understanding of vanilla RNNs and GRUs by predicting what happens in t
 
 ### Challenge 4: Parameter Count Comparison
 
-**Setup:** Vanilla RNN parameters: `W_xh` (N_HIDDEN × VOCAB_SIZE), `W_hh` (N_HIDDEN × N_HIDDEN), `b_h` (N_HIDDEN), `W_hy` (VOCAB_SIZE × N_HIDDEN), `b_y` (VOCAB_SIZE). GRU adds `W_xz`, `W_hz`, `W_xr`, `W_hr` for the gates (lines 215-245). `N_HIDDEN = 32`, `VOCAB_SIZE = len(unique_chars) + 1` (approximately 28).
+**Setup:** Vanilla RNN parameters: `W_xh` (N_HIDDEN × VOCAB_SIZE), `W_hh` (N_HIDDEN × N_HIDDEN), `b_h` (N_HIDDEN), `W_hy` (VOCAB_SIZE × N_HIDDEN), `b_y` (VOCAB_SIZE). GRU adds `W_xz`, `W_hz`, `W_xr`, `W_hr` for the gates (lines 215-245). `N_HIDDEN = 32`, `VOCAB_SIZE = len(unique_chars) + 1` = 27 for `names.txt` (26 letters plus the boundary token).
 
-**Question:** Does the GRU have roughly 2x or 3x the parameters of vanilla RNN? The comment on line 228 says "doubling the parameter count vs vanilla RNN." Is that accurate?
+**Question:** Does the GRU have roughly 2x or 3x the parameters of vanilla RNN? The docstring on lines 224-225 says "doubling the parameter count vs vanilla RNN." Is that accurate?
 
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** The GRU has approximately 3x the parameters of vanilla RNN (counting only hidden-to-hidden and input-to-hidden matrices), not 2x. The comment is inaccurate. Both models share the same output projection (W_hy, b_y).
+**Answer:** Neither 2x nor 3x overall: the GRU prints 6,555 parameters and the vanilla RNN 2,811, a ratio of 2.33. Counting only the recurrent cell (everything except the shared output layer `W_hy`, `b_y`), the ratio is 5,664 / 1,920 = 2.95. The "doubling" docstring is inaccurate under either count.
 
-**Why:** Vanilla RNN has 3 weight matrices for the hidden layer: W_xh, W_hh, and (treating b_h as a matrix) = 3 parameter tensors. GRU has W_xz, W_hz (update gate), W_xr, W_hr (reset gate), W_xh, W_hh (candidate) = 6 parameter tensors for the hidden computation — exactly 3x. Both models share the same W_hy and b_y output projection. However, the comment says "doubling" which refers to the W_hh-equivalent recurrent weight count (1 in vanilla vs 2 in GRU for the gates), not the total count. The actual multiplier depends on which parameters you count. At N_HIDDEN=32, VOCAB_SIZE≈28: vanilla RNN has about 960+1024+32 ≈ 2016 hidden params; GRU has about 5×(960+1024) ≈ 6016 hidden params (≈3x).
+**Why:** With 27 symbols and 32 hidden units, one input matrix is 32 × 27 = 864 and one recurrent matrix is 32 × 32 = 1,024. The vanilla cell has one of each plus the hidden bias `b_h`: 864 + 1,024 + 32 = 1,920. The GRU cell has three of each (update gate, reset gate, candidate) and no hidden bias: 3 × (864 + 1,024) = 5,664. Both models add the same output layer, `W_hy` (27 × 32 = 864) plus `b_y` (27), giving totals of 2,811 and 6,555. Instantiating both models with the script's own initializers reproduces these counts.
 
-**Script reference:** `01-foundations/micrornn.py`, lines 195-212 (vanilla RNN params), lines 215-245 (GRU params), lines 228-229 (inaccurate "doubling" comment), lines 405-406 (parameter count printing)
+**Script reference:** `01-foundations/micrornn.py`, lines 195-212 (vanilla RNN params), lines 215-245 (GRU params), lines 224-225 (inaccurate "doubling" docstring), lines 405-406 (parameter count printing)
 
 </details>
 

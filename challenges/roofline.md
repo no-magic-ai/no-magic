@@ -17,32 +17,28 @@ Test your understanding of roofline analysis and hardware utilization by predict
 
 Achievable throughput is limited by bandwidth: `0.042 * 100 GB/s = 4.2 GFLOPS`. Peak compute is 50 GFLOPS, so only `4.2 / 50 = 8.4%` of the compute is utilized. The remaining 91.6% of compute capacity sits idle, waiting for data to arrive from memory.
 
-**Why:** Vector addition is the canonical memory-bound operation. Each element requires one floating-point operation but three memory transactions (two loads, one store). No amount of hardware compute scaling helps -- the bottleneck is entirely in the memory subsystem. This is why the roofline model has a flat "roof" on the left side: below the ridge point, performance is a horizontal line determined solely by bandwidth, not compute.
+**Why:** Vector addition is the canonical memory-bound operation. Each element requires one floating-point operation but three memory transactions (two loads, one store). No amount of hardware compute scaling helps -- the bottleneck is entirely in the memory subsystem. This is the sloped part of the roofline: below the ridge point, attainable performance is `AI × bandwidth`, a line that rises with arithmetic intensity and does not depend on peak compute. The flat roof is to the right of the ridge, where compute is the limit.
 
-**Script reference:** `03-systems/microroofline.py`, arithmetic intensity computation and roofline model definition
+**Script reference:** `03-systems/microroofline.py`, lines 36-38 (assumed peaks and ridge point), lines 165-194 (arithmetic intensity and theoretical throughput), lines 216-224 (vector-add FLOP and byte counts)
 
 </details>
 
 ---
 
-### Challenge 2: MIMO Rank and GPU Utilization
+### Challenge 2: MIMO Rank and Arithmetic Intensity
 
-**Setup:** For a `B[n,r] @ X[r,d]` matrix multiplication in the SSM scan, arithmetic intensity scales as `AI ≈ 2r` FLOPs/byte (where `r` is the MIMO rank). SISO (rank-1) has `AI ≈ 2`. Consider an H100 GPU with a ridge point of ~300 FLOPs/byte.
+**Setup:** `run_ssm_comparison` (lines 416-469) counts, per step, `3 * N * E` FLOPs and `(N*E + N + E) * 8` bytes for the SISO update, and `N*E + 2*N*E*r` FLOPs and `(N*E + N*r + r*E) * 8` bytes for a rank-`r` MIMO update, with `N_STATE = 16` and `N_EMBD = 8`. A common rule of thumb says MIMO intensity grows like `2r`, and the cards quote a GPU ridge point of about 300 FLOPs/byte.
 
-**Question:** What MIMO rank is needed to reach the H100 ridge point? What fraction of peak compute does SISO (`AI ≈ 2`) utilize on this hardware?
+**Question:** Using the script's own byte accounting, what intensities do ranks 1, 16 and 64 reach? Can any rank reach a ridge of 300 here? What would?
 
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** To reach the ridge point: `2r = 300`, so `r = 150`. MIMO rank-150 is needed to fully saturate H100 compute.
+**Answer:** Rank 1 gives 384 / 1,216 ≈ 0.32 (the same as SISO), rank 16 gives 4,224 / 4,096 ≈ 1.03 and rank 64 gives 16,512 / 13,312 ≈ 1.24. No rank reaches 300 under this accounting: as `r` grows, both FLOPs and bytes grow linearly in `r`, so the intensity levels off at `2NE / (8(N + E)) = 256 / 192 ≈ 1.33`. To approach a GPU ridge point the state and input dimensions themselves must be large, as in the operation table, where a 16×16 outer product sits at 2.00 and a 256×256 rank-16 matrix multiply at 32.00.
 
-SISO utilization: `2 / 300 = 0.67%`. The GPU is 99.3% idle during SISO scan operations.
+**Why:** In this accounting every extra rank brings new data (`N` more values of `B` and `E` more of `X`) along with its `2NE` FLOPs, so the ratio cannot grow without bound. The "`AI ≈ 2r`" rule of thumb assumes the traffic is dominated by reading and writing the state, which does not grow with `r`; that holds when the state is much larger than the per-rank inputs, which is not the case at `N = 16`, `E = 8`. For a matrix multiply `[n × r] @ [r × m]` the script's counts give `2nmr / (8r(n + m)) = nm / (4(n + m))`, which depends on `n` and `m`, not on `r`. The SISO-to-MIMO move raises intensity here, by about 3.3x at rank 16, but the large GPU-scale gains need large matrices.
 
-Even MIMO rank-16 (AI ≈ 32) achieves only `32 / 300 ≈ 10.7%` utilization. Rank-64 reaches `128 / 300 ≈ 42.7%`.
-
-**Why:** This is the hardware motivation behind Mamba-3's MIMO formulation. SISO SSMs were designed for sequential (CPU/TPU) execution where memory bandwidth is the bottleneck anyway. On modern GPUs with massive parallel compute, SISO wastes nearly all available FLOPS. Increasing the MIMO rank converts a memory-bound operation into a compute-bound one by increasing the ratio of arithmetic to memory traffic. The matmul `B @ X` reuses data across the rank dimension, amortizing the cost of loading from memory.
-
-**Script reference:** `03-systems/microroofline.py`, MIMO rank sweep and arithmetic intensity scaling analysis
+**Script reference:** `03-systems/microroofline.py`, lines 226-258 (outer-product and matmul counts), lines 294-366 (operation table sizes), lines 416-469 (SISO and MIMO state-update counts)
 
 </details>
 
@@ -50,19 +46,17 @@ Even MIMO rank-16 (AI ≈ 32) achieves only `32 / 300 ≈ 10.7%` utilization. Ra
 
 ### Challenge 3: Why More FLOPs Can Be Faster
 
-**Setup:** SISO performs `3 * N * D` FLOPs per step. MIMO rank-16 performs `N * D + 2 * N * D * 16 = 33 * N * D` FLOPs per step -- 11x more total work. Both process the same sequence.
+**Setup:** SISO performs `3 * N * E` FLOPs per step. MIMO rank-16 performs `N * E + 2 * N * E * 16 = 33 * N * E` FLOPs per step -- 11x more. With the byte counts from Challenge 2, SISO moves 1,216 bytes per step and MIMO-16 moves 4,096.
 
-**Question:** Under what condition does MIMO finish faster despite doing 11x more FLOPs? On a GPU where SISO utilizes less than 1% of peak compute, how much can MIMO's throughput increase before it becomes compute-bound?
+**Question:** On hardware where both updates are memory-bound, how long does a MIMO step take relative to a SISO step, and how does FLOP throughput compare? Does that make MIMO finish the same sequence sooner?
 
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** MIMO finishes faster when it is still memory-bound (or just reaching compute-bound) and the additional FLOPs are "free" -- absorbed by compute units that were previously idle.
+**Answer:** Below the ridge point a step takes `Bytes / Bandwidth`, so a MIMO-16 step takes about 4,096 / 1,216 ≈ 3.4x as long as a SISO step while doing 11x the FLOPs: FLOP throughput rises about 3.3x. It does not make the same sequence finish sooner: on memory-bound hardware MIMO takes about 3.4x longer per step. The gain is in work done per byte moved, which pays off if the extra rank does useful work that SISO would need more steps or more model capacity to do — the argument the script cites from Mamba-3 (arXiv:2603.15569), not something it measures.
 
-On a GPU where SISO uses 0.67% of peak compute (AI = 2, ridge = 300): the hardware can absorb up to `300 / 2 = 150x` more FLOPs before becoming compute-limited. MIMO rank-16 at 11x more FLOPs is still well within this headroom. The achieved GFLOPS jumps from 0.67% to ~7.3% of peak, but the wall-clock time is determined by memory bandwidth (which is the same for both), not by the additional compute.
+**Why:** The roofline model separates time from work. When an operation is memory-bound, adding arithmetic that reuses data already loaded costs almost nothing, so higher arithmetic intensity raises achieved FLOPs per second. The script's Phase 3 prints FLOPs per second for both updates in pure Python, where interpreter overhead, not memory bandwidth, dominates timing, so those numbers illustrate the idea rather than measure a GPU.
 
-**Why:** The roofline model makes this paradox clear. Below the ridge point, execution time is `Bytes / Bandwidth` -- it depends only on data movement, not on FLOPs. If MIMO's memory traffic is similar to SISO's (same state vectors loaded/stored), the wall-clock time is nearly identical despite 11x more arithmetic. The extra FLOPs execute on hardware that was idle during SISO. This is the core insight: on parallel hardware with high compute-to-bandwidth ratios, trading more FLOPs for better arithmetic intensity is not just free -- it is the correct optimization strategy.
-
-**Script reference:** `03-systems/microroofline.py`, SISO vs MIMO comparison and roofline throughput analysis
+**Script reference:** `03-systems/microroofline.py`, lines 416-469 (SISO vs MIMO counts and timings), lines 908-948 (Phase 3 throughput table and notes)
 
 </details>

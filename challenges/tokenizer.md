@@ -15,7 +15,7 @@ Test your understanding of Byte-Pair Encoding by predicting what happens in thes
 
 **Answer:** The output is `[new, a]`. A right-to-left scan would produce `[a, new]`.
 
-**Why:** The left-to-right scan consumes position 0 and 1 (producing `new`) and then increments `i` by 2, landing at position 2. Position 2 is the leftover `a`, which cannot form a pair with nothing. The comment on line 71 explicitly states "Overlapping pairs resolve left-to-right." This determinism is essential: if the merge direction were data-dependent, the same string could tokenize differently on different runs, breaking the invariant that tokenization is a pure function of the input string.
+**Why:** The left-to-right scan consumes position 0 and 1 (producing `new`) and then increments `i` by 2, landing at position 2. Position 2 is the leftover `a`, which cannot form a pair with nothing. The docstring on lines 69-71 explicitly states "Overlapping pairs resolve left-to-right." This determinism is essential: if the merge direction were data-dependent, the same string could tokenize differently on different runs, breaking the invariant that tokenization is a pure function of the input string.
 
 **Script reference:** `01-foundations/microtokenizer.py`, lines 66-85 (`apply_merge`, especially lines 79-84 and the comment on lines 70-75)
 
@@ -32,11 +32,11 @@ Test your understanding of Byte-Pair Encoding by predicting what happens in thes
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** Re-counting would break the guarantee that the same string always produces the same token sequence. Tokenization would become input-batch-dependent, producing different outputs depending on what other text appeared in the same encoding request.
+**Answer:** Replay applies the merges exactly in the priority training learned, so the output is a fixed function of the full input string and the learned merge list. Re-ranking by counts in the input would apply the same merges in a different order whenever the input's local counts disagree with the training order, and that can change the segmentation. It would not make encoding nondeterministic — `encode` takes one string, and a re-ranking encoder would also return the same tokens every time for that string — and each token ID would still name the same learned byte sequence. Neither encoder makes a word's tokens independent of its neighbours: this script has no pre-tokenization, so learned merges can span spaces and newlines.
 
-**Why:** The merges were learned on the full training corpus, where pair (a, b) was the most frequent pair at step 0. But on a new input string "aba", pair (a, b) might appear once while some other pair dominates. Re-counting would apply a different merge first, producing a different sequence. Priority-order replay ensures determinism: the same string always maps to the same token IDs, which is required for a tokenizer to be a consistent preprocessing step. The comment on lines 148-153 explains this directly: "Priority order ensures deterministic tokenization."
+**Why:** Overlapping merges compete for the same byte. Train two merges with the script's `train_bpe` on `"ab1ab2ab3bc4bc5"`: it learns `(a, b)` first and `(b, c)` second. Encode `"abcbc"`. Replay applies `(a, b)` first and gives `ab | c | bc`. Re-ranking the same two merges by their counts in this input applies `(b, c)` first (it occurs twice) and gives `a | bc | bc`. Both encoders are deterministic, and the token IDs for `ab` and `bc` mean the same bytes in both; only the order of the learned merges changed, and with it the segmentation. Replay does not make a word's tokens context-free, though: train three merges on `"ab ab ab ab cd cd ab cd"` and the second merge is `(ab, ' ')`, so replay encodes `"ab"` as `ab` but `"ab cd"` as `ab␣ | c | d`. The docstring on lines 148-153 justifies the design by determinism ("the same string always produces the same token sequence") and by "input batch" dependence; that rationale is incorrect, because re-counting a single string is also deterministic and `encode(text, merges)` has no batch. The behaviour it documents, replaying merges in learned order, is unchanged and correct.
 
-**Script reference:** `01-foundations/microtokenizer.py`, lines 145-161 (`encode` function), lines 147-153 (why comment)
+**Script reference:** `01-foundations/microtokenizer.py`, lines 145-161 (`encode` function), lines 146-153 (docstring with the incorrect rationale)
 
 </details>
 
@@ -89,9 +89,9 @@ Test your understanding of Byte-Pair Encoding by predicting what happens in thes
 <details>
 <summary>Reveal Answer</summary>
 
-**Answer:** It triggers when the entire corpus is compressed into a single token — there are no adjacent pairs left. On names.txt with 256 merges, it will NOT trigger because 256 merges is far fewer than what's needed to fully collapse a 200K+ byte corpus.
+**Answer:** It triggers when the entire corpus is compressed into a single token — there are no adjacent pairs left. On names.txt with 256 merges, it will NOT trigger because 256 merges is far fewer than what's needed to fully collapse a 228,145-byte corpus.
 
-**Why:** After each merge, the corpus shrinks because each pair occurrence is replaced by a single token. Full collapse requires enough merges to reduce the corpus to one token — roughly O(n) merges for a corpus of length n. names.txt has ~200,000 bytes. 256 merges reduces it by at most 256 rounds of pair elimination, leaving tens of thousands of tokens. The collapse check is a defensive guard for cases like a corpus consisting of a single unique byte repeated many times (e.g., `[65, 65, 65, 65]` → 2 merges to fully collapse), not for realistic corpora.
+**Why:** After each merge, the corpus shrinks because each pair occurrence is replaced by a single token. Full collapse requires enough merges to reduce the corpus to one token, and the final token must spell out the whole corpus. Each merge adds one token to the vocabulary, so for text without long exact repeats this takes on the order of n merges for a corpus of length n. names.txt has 228,145 bytes of 32,033 names, so 256 rounds of pair elimination leave it far from a single token. The collapse check is a defensive guard for cases like a corpus consisting of a single unique byte repeated many times (e.g., `[65, 65, 65, 65]` → 2 merges to fully collapse), not for realistic corpora.
 
 **Script reference:** `01-foundations/microtokenizer.py`, lines 104-116 (training loop with collapse check), lines 55-63 (get_pair_counts, which returns empty Counter when only 1 token remains)
 

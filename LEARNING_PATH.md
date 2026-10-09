@@ -8,7 +8,8 @@ A structured guide through the no-magic implementations. Pick a track based on y
 2. **Check off scripts** as you complete them using the `- [ ]` checkboxes.
 3. **Each script runs without installation** — just `python <path>`. No virtual environment, no dependencies, no configuration. Scripts whose catalog `data_source` is `names_download` fetch makemore's `names.txt` on first run (network needed once; cached as `names.txt` in the directory you run from). Each script's catalog `teaching_kind` says whether it trains and infers, compares trained variants, runs untrained forward computations, or demonstrates a non-learning algorithm.
 4. **Read each script top-to-bottom like a tutorial**, then run it. The comments explain the "why" at every step. After running, experiment: change hyperparameters, swap datasets, break things on purpose.
-5. **Prerequisites matter.** Each step lists what it builds on. If you jump into a track mid-way, check the "Builds on" field and backfill gaps.
+5. **Prerequisites matter.** Each step lists what it builds on. If you jump into a track mid-way, check the "Builds on" field (in Tracks 1–3, "Why this step here") and backfill gaps.
+6. **Predict, then run.** Each step in Tracks 1–3 also gives the exact command, the data it needs, links to the source, paper card, primary paper, preview GIF and (for some steps) an optional lesson in `no-magic-papers`, a question to answer before running with a checked answer, and the limits of what the program shows.
 
 ## Time Estimate Summary
 
@@ -26,49 +27,97 @@ A structured guide through the no-magic implementations. Pick a track based on y
 
 ## Track 1: Weekend Sprint — Transformers (~4 hrs)
 
-From raw text to self-attention. This track builds the core transformer pipeline piece by piece: how text becomes tokens, tokens become vectors, vectors flow through recurrent and attention-based architectures, and how BERT inverts the GPT paradigm.
+From raw text to self-attention. This track builds the core transformer pipeline piece by piece: how text becomes tokens, tokens become vectors, vectors flow through recurrent and attention-based architectures, and how BERT inverts the GPT paradigm. Steps 1–3 are conceptual background: every script is self-contained, and none of the later programs imports or runs code from an earlier one.
 
 ### Steps
 
 **1. `01-foundations/microtokenizer.py`**
-- **You'll learn:** How Byte Pair Encoding iteratively merges frequent character pairs to build a subword vocabulary from raw text.
-- **Builds on:** None — this is the entry point.
-- **Key moment:** Watching the vocabulary grow as the algorithm discovers that common letter pairs like "th" and "er" get merged first, exactly matching linguistic intuition.
+- **Outcome:** You train a byte-level Byte Pair Encoding tokenizer (256 merges over the raw bytes of `names.txt`), watch each merge shrink the corpus, and check that encoding replays the learned merges in order and decodes back to the original text.
+- **Why this step here:** It is the entry point and introduces tokens and vocabularies. It is a conceptual prerequisite only: `microgpt.py` does not use this tokenizer; it builds its own 27-symbol character vocabulary.
+- **Run:** `python 01-foundations/microtokenizer.py`
+- **Data:** Downloads makemore's `names.txt` (32,033 lowercase names, 228,145 bytes) into the current directory on first run and reuses it afterwards. Run every step from the repository root so all steps share one cached copy.
+- **Links:** [source](01-foundations/microtokenizer.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/bpe.md) · [primary paper](https://arxiv.org/abs/1508.07909) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microtokenizer.gif)
+- **Predict before you run:** `apply_merge` scans left to right. What does `apply_merge([97, 97, 97], (97, 97), 256)` return, and how many tokens will the final vocabulary hold?
+  <details><summary>Check your prediction</summary>
+
+  `[256, 97]`. The first two `a` bytes (97) merge into token 256 and the scan jumps past both, so overlapping pairs resolve left to right. The final vocabulary is 256 byte tokens + 256 merges = 512 tokens; the script prints this before training starts.
+  </details>
+- **Limits:** 256 merges learned from 228 KB of names is a toy merge table. The linked card is Sennrich et al.'s subword BPE for translation; the script follows GPT-2's byte-level variant and cites Gage (1994) and Radford et al. (2019).
 - **Time:** 30 min
 - [ ] Completed
 
 **2. `01-foundations/microembedding.py`**
-- **You'll learn:** How Word2Vec's skip-gram model learns to place semantically similar words near each other in vector space using only co-occurrence patterns.
-- **Builds on:** `microtokenizer` (understanding of token vocabularies).
-- **Key moment:** The trained vectors capture word relationships — nearest-neighbor queries return semantically related words despite never being told what words mean.
+- **Outcome:** You learn 32-dimensional name embeddings by projecting character bigram and trigram counts through one linear layer trained with an InfoNCE contrastive loss on (name, augmented name) pairs, then compare cosine similarity for similar and random name pairs and list nearest neighbours.
+- **Why this step here:** It shows how discrete symbols become vectors whose geometry encodes similarity. `microgpt.py` does not reuse these vectors; it learns its own embedding table (`wte`) from scratch.
+- **Run:** `python 01-foundations/microembedding.py`
+- **Data:** `names.txt`, downloaded on first run as in step 1. Training uses the first 5,000 names; the neighbour search uses the first 10,000.
+- **Links:** [source](01-foundations/microembedding.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/word2vec.md) · [primary paper](https://arxiv.org/abs/1301.3781) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microembedding.gif)
+- **Predict before you run:** `extract_ngrams` pads a name as `^name$`. How many n-grams does `"anna"` produce, how many of them does `"anne"` share, and how many parameters will the printed model line report?
+  <details><summary>Check your prediction</summary>
+
+  `"anna"` gives 9 n-grams (5 bigrams and 4 trigrams). It shares 5 with `"anne"`: `^a`, `an`, `nn`, `^an`, `ann`. The n-gram vocabulary from the first 5,000 names fills its 500-entry cap, so the model line reads `32 x 500 = 16,000 params`.
+  </details>
+- **Limits:** This is not word2vec. There is no skip-gram or CBOW model, no words and no context window; the script cites SimCLR and sentence-transformers, and the word2vec card is linked only as the closest card. "Similar" here means overlapping spelling: positives are the same name with a deleted or swapped character.
 - **Time:** 40 min
 - [ ] Completed
 
 **3. `01-foundations/micrornn.py`**
-- **You'll learn:** How recurrent neural networks maintain hidden state across time steps, and why GRUs solve the vanishing gradient problem that plagues vanilla RNNs.
-- **Builds on:** `microembedding` (vector representations of tokens).
-- **Key moment:** Comparing vanilla RNN vs GRU output quality — the gating mechanism visibly improves the model's ability to remember earlier context.
+- **Outcome:** You train a vanilla RNN and a GRU for 3,000 steps each on next-character prediction over a 200-name subset, then compare their final loss, the ratio of gradient norms at the first and last time step of one long sequence, and sampled names.
+- **Why this step here:** It models sequences with a recurrent hidden state before attention replaces recurrence. The GRU update `h_t = (1 - z_t) * h_{t-1} + z_t * candidate` shows how a gate can pass state (and gradient) through unchanged. `microgpt.py` uses none of this code; the step is a conceptual contrast.
+- **Run:** `python 01-foundations/micrornn.py`
+- **Data:** `names.txt`, downloaded on first run; training uses 200 names.
+- **Links:** [source](01-foundations/micrornn.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/rnn-elman.md) · [primary paper](https://onlinelibrary.wiley.com/doi/10.1207/s15516709cog1402_1) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/micrornn.gif)
+- **Predict before you run:** The vocabulary is 27 symbols (26 letters plus a boundary token) and the hidden size is 32. How many parameters will each model print?
+  <details><summary>Check your prediction</summary>
+
+  Vanilla RNN: 2,811 (`W_xh` 32×27 + `W_hh` 32×32 + `b_h` 32 + `W_hy` 27×32 + `b_y` 27). GRU: 6,555 (three input and three recurrent matrices, 3 × (864 + 1,024), plus the same 27×32 output layer and `b_y`, and no hidden bias). That is 2.33 times the vanilla count, not the doubling the source comment mentions.
+  </details>
+- **Limits:** One run on 200 names is not evidence that GRUs always beat vanilla RNNs, and the gradient ratio comes from a single sequence. The linked card is Elman (1990); the source cites Rumelhart et al. for the vanilla RNN and Cho et al. (2014) for the GRU.
 - **Time:** 45 min
 - [ ] Completed
 
 **4. `01-foundations/microgpt.py`**
-- **You'll learn:** How a decoder-only transformer uses masked self-attention and learned positional encodings to generate text autoregressively, trained with scalar autograd from scratch.
-- **Builds on:** `microtokenizer` (tokenization), `micrornn` (sequential modeling concepts), `microembedding` (vector representations).
-- **Key moment:** The `Value` class implementing reverse-mode autodiff — a full backward pass through attention, layer norm, and MLP, all in pure Python.
+- **Outcome:** You build a one-layer, four-head decoder-only transformer on a scalar autograd `Value` engine, train it for 1,000 Adam steps on next-character prediction (one name per step), and sample 20 names at temperature 0.5.
+- **Why this step here:** It combines the earlier ideas — symbols as ids (step 1), learned vectors (step 2) and next-symbol prediction from context (step 3) — but imports none of their code. Its vocabulary is the 26 letters found in `names.txt` plus a BOS token, not the BPE tokenizer, and its embeddings are trained from scratch. Causality comes from the key/value lists: position `t` can only attend to the keys appended at positions `0..t`.
+- **Run:** `python 01-foundations/microgpt.py` (add `--interactive` to change `n_embd`, `block_size`, `num_steps` or `learning_rate` and retrain)
+- **Data:** `names.txt`, downloaded on first run; the names are shuffled and cycled one per step.
+- **Links:** [source](01-foundations/microgpt.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/gpt-1.md) · [primary paper](https://cdn.openai.com/research-covers/language-unsupervised/language_understanding_paper.pdf) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microgpt.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/gpt-1.md)
+- **Predict before you run:** What will the `Parameters:` line print?
+  <details><summary>Check your prediction</summary>
+
+  `Parameters: 4,192`. Token embeddings 27×16 = 432, position embeddings 16×16 = 256, four attention matrices 4 × 16×16 = 1,024, MLP 64×16 + 16×64 = 2,048 and the output head 27×16 = 432. There are no bias terms.
+  </details>
+- **Limits:** A character-level toy of about 4,200 parameters. The source follows GPT-2's layout with RMSNorm instead of LayerNorm, ReLU instead of GELU and no biases. GPT-1 adds supervised fine-tuning on downstream tasks and uses a 40,000-merge BPE vocabulary; neither is here. The sampled names show learned character statistics, not language understanding.
 - **Time:** 60 min
 - [ ] Completed
 
 **5. `01-foundations/microbert.py`**
-- **You'll learn:** How BERT's bidirectional masked language model differs from GPT's autoregressive approach — same transformer blocks, fundamentally different training objective.
-- **Builds on:** `microgpt` (transformer architecture, autograd `Value` class).
-- **Key moment:** Seeing that BERT attends to tokens both left and right of the mask, while GPT can only look left — a single masking change creates a completely different model.
+- **Outcome:** You train an encoder of the same size for 3,000 steps with masked-character prediction (25% of characters replaced by `[MASK]`, at least one per name), then measure top-1 and top-3 fill-in accuracy and compare predictions for one masked slot in different contexts.
+- **Why this step here:** It reuses the transformer block from step 4 and changes two things: every position attends to every other position, and the loss covers only the masked positions. The script carries its own copy of the `Value` engine; nothing is imported from `microgpt.py`.
+- **Run:** `python 01-foundations/microbert.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](01-foundations/microbert.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/bert.md) · [primary paper](https://arxiv.org/abs/1810.04805) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbert.gif)
+- **Predict before you run:** How does the printed parameter count differ from `microgpt.py`'s 4,192?
+  <details><summary>Check your prediction</summary>
+
+  `Parameters: 4,224`, 32 more. The vocabulary gains a `[MASK]` token (26 letters + BOS + MASK = 28), which adds one 16-wide row to the token embeddings and one to the prediction head.
+  </details>
+- **Limits:** BERT masks 15% of tokens with an 80/10/10 mask/random/keep split and also trains next-sentence prediction; the script masks 25% with `[MASK]` only and has neither the split nor sentence pairs. Fill-in accuracy is measured on names taken from the training data.
 - **Time:** 45 min
 - [ ] Completed
 
 **6. `03-systems/microattention.py`**
-- **You'll learn:** How multi-head attention, grouped-query attention, and multi-query attention trade off between quality and compute by sharing key/value heads across query heads.
-- **Builds on:** `microgpt` (self-attention fundamentals).
-- **Key moment:** The side-by-side comparison showing that grouped-query attention achieves nearly the same output quality as full multi-head attention with significantly fewer parameters.
+- **Outcome:** You run single-head, multi-head (MHA), grouped-query (GQA), multi-query (MQA) and sliding-window attention forward on the same random input (32 positions, width 64, 4 heads) and read an analytic FLOP and memory table alongside each output's cosine similarity to the MHA output.
+- **Why this step here:** It generalises the per-head loop of step 4. GQA and MQA reuse the MHA query weights and average groups of MHA key/value weights, so each variant can be compared against the same MHA output.
+- **Run:** `python 03-systems/microattention.py` (add `--interactive` to change the sequence length, width, head counts or window)
+- **Data:** None to download; inputs and weights are random matrices drawn with seed 42.
+- **Links:** [source](03-systems/microattention.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/transformer.md) · [primary paper](https://arxiv.org/abs/1706.03762) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microattention.gif)
+- **Predict before you run:** For the GQA row (2 key/value heads) and the MQA row (1), what will the Memory column show?
+  <details><summary>Check your prediction</summary>
+
+  GQA: 2 × 2 × 32 × 16 = 2,048 floats; MQA: 2 × 32 × 16 = 1,024 floats, the keys and values cached for 32 positions at head width 16. Careful when comparing rows: the vanilla and MHA rows report the 32×32 score matrix (1,024) and the sliding-window row reports 32 × 8 = 256 scores, which are different quantities.
+  </details>
+- **Limits:** Nothing is trained. The cosine similarity only says how close each untrained output is to the MHA output when the shared weights are averaged; it is not a quality or accuracy measurement, and the pure-Python timings are not throughput results. The printed takeaway that the sliding window is "4x cheaper" at this length (32 / 8) counts only the attention-score work; the table's totals, which include the projections, are 1,310,720 FLOPs for MHA and 1,114,112 for the window, about 1.18x. Beyond the Transformer card the source cites Shazeer (2019), Ainslie et al. (2023) and Beltagy et al. (2020).
 - **Time:** 40 min
 - [ ] Completed
 
@@ -76,44 +125,84 @@ From raw text to self-attention. This track builds the core transformer pipeline
 
 ## Track 2: Weekend Sprint — Alignment (~3 hrs)
 
-How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, preference optimization, and reinforcement learning from human feedback — the techniques that turn a base language model into a useful assistant.
+How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, preference optimization, and reinforcement learning from human feedback — the techniques that turn a base language model into a useful assistant. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people.
 
 **Prerequisites:** Complete Track 1, or at minimum `01-foundations/microgpt.py` (the autograd `Value` class and transformer architecture are assumed knowledge).
 
 ### Steps
 
 **1. `02-alignment/microlora.py`**
-- **You'll learn:** How Low-Rank Adaptation freezes pretrained weights and injects small trainable matrices (A and B) that capture task-specific adjustments without modifying the original model.
-- **Builds on:** `microgpt` (transformer weights and forward pass).
-- **Key moment:** The rank-1 update math — a weight matrix with millions of parameters gets adapted using two tiny matrices whose product has the same shape, dramatically reducing trainable parameters.
+- **Outcome:** You pretrain a `microgpt`-sized base model on names starting A–M (800 steps), freeze it, train rank-2 adapters on the query and value projections on names starting N–Z (500 steps), and compare base and adapted loss on both splits.
+- **Why this step here:** Every later step adapts or fine-tunes a small GPT, and LoRA is the cheapest way to change one: the base weights stay fixed and only two small matrices per adapted projection learn. It needs the forward pass and autograd from `microgpt.py`; the script carries its own copy of both.
+- **Run:** `python 02-alignment/microlora.py`
+- **Data:** `names.txt`, downloaded on first run and split by first letter.
+- **Links:** [source](02-alignment/microlora.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/lora.md) · [primary paper](https://arxiv.org/abs/2106.09685) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microlora.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/lora.md)
+- **Predict before you run:** The script adds `A @ (B @ x)` to each frozen projection, with `A` of shape 16×2 drawn from N(0, 0.02) and `B` of shape 2×16 set to zero. (1) How many trainable parameters does the results line report against the 4,192 base parameters? (2) On the first adaptation step, which of `A` and `B` receives a nonzero gradient?
+  <details><summary>Check your prediction</summary>
+
+  (1) `LoRA: 128 (3.1%)`: each adapter has 16×2 + 2×16 = 64 parameters, and there are two (query and value). (2) Only `B`. Because `B` starts at zero, `B @ x = 0`, so the gradient of `A` (the output-side factor) is zero; the gradient of `B` (the input-side factor) is `Aᵀ (∂L/∂y) xᵀ`, which is generally nonzero (it vanishes only when `Aᵀ (∂L/∂y)` or `x` does). The zero gradient for `A` holds for any input; the size of `B`'s gradient depends on the name, the base weights and the seed. One run of the script's own adaptation loop for a single step, on an untrained base with the name `olivia`, gave exactly 0 for `A` and a nonzero gradient for `B`: after the Adam update `B` had changed and `A` and the base weights had not. Only the adapters are updated, the base stays frozen, and no α/r scaling is applied. The LoRA paper initializes the other way round: it writes `W₀ + BA`, sets its output-side `B` (d×r) to zero and draws its input-side `A` (r×k) from a Gaussian, so there the output-side factor moves first. That is a different initialization, not the same one with the letters swapped.
+  </details>
+- **Limits:** No full fine-tuning is run: the "Full fine-tune" number in the results line is only the base parameter count, so nothing here shows that LoRA matches full fine-tuning. The adapter output is not scaled by α/r. The loss comparison is one run at rank 2 on one split.
 - **Time:** 35 min
 - [ ] Completed
 
 **2. `02-alignment/microqlora.py`**
-- **You'll learn:** How QLoRA combines 4-bit quantization of frozen weights with LoRA adapters, enabling fine-tuning of large models on memory-constrained hardware.
-- **Builds on:** `microlora` (LoRA mechanics), `microquant` (quantization concepts, optional but helpful).
-- **Key moment:** The double-quantization step — quantizing the quantization constants themselves to squeeze out additional memory savings.
+- **Outcome:** You pretrain a base model at full precision on 80% of the shuffled names (800 steps), quantize its attention and MLP weights to 4-bit NF4 levels in blocks of 8 with double-quantized INT8 scales, then train rank-2 adapters on the query and value projections on the other 20% (500 steps) and sample names.
+- **Why this step here:** It adds quantized frozen weights to the LoRA recipe from step 1. `03-systems/microquant.py` in Track 3 covers the quantization arithmetic in more depth; it helps but is not required.
+- **Run:** `python 02-alignment/microqlora.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](02-alignment/microqlora.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/qlora.md) · [primary paper](https://arxiv.org/abs/2305.14314) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microqlora.gif)
+- **Predict before you run:** Only the attention and MLP matrices are quantized (3,072 weights); each row is cut into blocks of 8 weights with one scale per block. What will the three memory lines and the compression ratio print?
+  <details><summary>Check your prediction</summary>
+
+  There are 384 blocks, so 384 scales. FP32: 3,072 × 4 = 12,288 bytes. NF4: 1,536 bytes of 4-bit codes + 384 × 4 = 1,536 scale bytes = 3,072 bytes. NF4 with double quantization: 1,536 + (384 × 1 + 4) = 1,924 bytes. Compression: 12,288 / 1,924 = 6.4x.
+  </details>
+- **Limits:** A one-layer, 16-dimensional toy: NF4 levels come from a normal-quantile approximation, blocks hold 8 weights instead of the 64 used in production, the embeddings and output head stay in full precision, and the adapter output is not scaled by α/r even though a docstring mentions it. Unlike `microlora.py`, the zero-initialized factor here is the output-side one, as in the LoRA paper, but the names are swapped: the code's `lora_B` (2×16) is the random input-side factor and `lora_A` (16×2) is the zero output-side factor.
 - **Time:** 35 min
 - [ ] Completed
 
 **3. `02-alignment/microdpo.py`**
-- **You'll learn:** How Direct Preference Optimization converts the RLHF objective into a simple classification loss over preferred vs dispreferred response pairs, eliminating the need for a separate reward model.
-- **Builds on:** `microgpt` (language model forward pass and loss computation).
-- **Key moment:** The DPO loss derivation — seeing how the Bradley-Terry preference model collapses into a binary cross-entropy loss that directly updates policy weights.
+- **Outcome:** You pretrain a base model (700 steps), freeze a copy as the reference policy, build up to 150 synthetic preference pairs that prefer a name of 5 or more letters (chosen) over a 3-letter name (rejected) sharing its first two letters — so the rejected completion after that prefix is a single letter — run 60 DPO steps with β = 0.1, and compare the average generated length of the reference and aligned models.
+- **Why this step here:** It changes a model from preference pairs with one supervised loss and no reward model, sampling or RL loop. It needs `microgpt.py`'s sequence log-probabilities. Steps 4 and 5 then show the reinforcement-learning route that DPO avoids.
+- **Run:** `python 02-alignment/microdpo.py`
+- **Data:** `names.txt`, downloaded on first run; the preference pairs are built from it by name length.
+- **Links:** [source](02-alignment/microdpo.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/dpo.md) · [primary paper](https://arxiv.org/abs/2305.18290) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdpo.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/dpo.md)
+- **Predict before you run:** At DPO step 1 the policy weights are still identical to the frozen reference. What will `dpo_loss` and the two mean rewards print?
+  <details><summary>Check your prediction</summary>
+
+  Every log-ratio `log π(y|x) − log π_ref(y|x)` is zero, so the margin is zero and each pair's loss is `log(1 + e⁰) = ln 2 ≈ 0.6931`; both mean rewards are 0.00 (floating-point rounding can leave a sign, as in `-0.00`). Calling the script's `dpo_loss` on eight pairs with the policy equal to its snapshot gave 0.69314718 for each pair and rewards within 4 × 10⁻¹⁶ of zero.
+  </details>
+- **Limits:** The preferences are a length rule, not human judgments. Each pair is scored as a whole sequence from the BOS token, prompt included; the shared prefix adds the same term to both log-ratios, so it cancels in the margin. The result is a shift in generated length on names; it does not show that DPO matches or beats RLHF, or that it replaces preference-data quality. The comment beside `DPO_BETA` describes β backwards: in the DPO paper β weights the KL penalty toward the reference, so a larger β keeps the policy closer to it and a smaller β lets it move further.
 - **Time:** 40 min
 - [ ] Completed
 
 **4. `02-alignment/microreinforce.py`**
-- **You'll learn:** How the REINFORCE algorithm estimates policy gradients using sampled trajectories and reward signals, forming the foundation of all policy gradient methods.
-- **Builds on:** `microgpt` (policy network architecture).
-- **Key moment:** The log-probability trick — multiplying the log-prob of each action by its reward creates a gradient that increases the probability of high-reward actions without ever differentiating through the reward function.
+- **Outcome:** You train a small policy network that emits 8-letter strings scored by hand-written rules, first with raw REINFORCE and then with an exponential-moving-average reward baseline, and compare gradient-norm variance, average reward and samples.
+- **Why this step here:** PPO in step 5 builds directly on the REINFORCE gradient, the log-probability of each sampled action weighted by the reward. The policy is a two-layer MLP over the previous letter and position, not a language model; from `microgpt.py` you need only the `Value` engine and softmax log-probabilities, which the script re-implements.
+- **Run:** `python 02-alignment/microreinforce.py`
+- **Data:** None to download; the policy samples letters from its own 26-letter vocabulary.
+- **Links:** [source](02-alignment/microreinforce.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/reinforce.md) · [primary paper](https://link.springer.com/article/10.1007/BF00992696) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microreinforce.gif)
+- **Predict before you run:** `generate_trajectory` has no stop action, so every sample is exactly `MAX_SEQ_LEN = 8` letters. Which reward rules can never fire, and what is the highest reward a sample can actually earn?
+  <details><summary>Check your prediction</summary>
+
+  The 4–6 letter bonus (+1) and the short-sequence penalty (−2) never apply. The best reachable reward is 1 (vowel first) + 1 (consonant last) + 2.5 (all five vowels) = 4.5, not the "~5.5" the script prints; the script's own `compute_reward` returns 4.5 for `aeioubcd` and gives 5.5 only to a 6-letter string such as `aeiouz`, which the sampler cannot produce.
+  </details>
+- **Limits:** A toy reward on letter strings with one random seed; the variance comparison comes from gradient norms sampled every 10 episodes in one run.
 - **Time:** 35 min
 - [ ] Completed
 
 **5. `02-alignment/microppo.py`**
-- **You'll learn:** How Proximal Policy Optimization clips the policy ratio to prevent destructively large updates, making reinforcement learning stable enough for language model training.
-- **Builds on:** `microreinforce` (REINFORCE baseline), `microgpt` (model architecture).
-- **Key moment:** The clipped surrogate objective — the min-of-two-terms construction that lets the model improve but never stray too far from the previous policy in a single step.
+- **Outcome:** You pretrain a smaller GPT (8-dimensional, 2 heads, 500 steps), train an MLP reward model on synthetic pairs that prefer 4–7 letter names, then run 100 policy updates with a clipped surrogate objective, a squared log-ratio penalty against the pretrained policy (coefficient 0.5) and a linear value baseline, and compare rewards and samples before and after.
+- **Why this step here:** It is the full RLHF loop — pretrain, reward model, policy optimisation — built from the REINFORCE gradient of step 4 plus a learned baseline and a penalty that keeps the policy near its starting point. DPO (step 3) reaches a related objective without the reward model and sampling.
+- **Run:** `python 02-alignment/microppo.py`
+- **Data:** `names.txt`, downloaded on first run; the preference pairs are built from it by name length.
+- **Links:** [source](02-alignment/microppo.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/ppo.md) · [primary paper](https://arxiv.org/abs/1707.06347) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microppo.gif)
+- **Predict before you run:** Each step samples 4 completions, records their log-probabilities as `old_logp` from the current weights, and then makes exactly one gradient update. What is the ratio `π_new / π_old` inside that update, and does the clip at [0.8, 1.2] ever change the objective?
+  <details><summary>Check your prediction</summary>
+
+  The ratio is `exp(0) = 1` for every sample, because `old_logp` and the current log-probability come from the same weights; the script's two log-probability functions agreed to within 4 × 10⁻¹⁵ on sampled completions. A ratio of 1 is inside [0.8, 1.2], so the clip never binds here and the update is an advantage-weighted policy gradient plus the penalty. Clipping only matters when one batch is reused for several updates, which this script does not do.
+  </details>
+- **Limits:** The preferences are synthetic, and the reward adds an explicit length bonus on top of the learned reward model. The printed `kl_div` is the mean absolute difference between policy and reference sequence log-probabilities, not a KL estimate. The reward model (an MLP) and the value function (a linear model) use plain floats and hand-written SGD, not autograd.
 - **Time:** 35 min
 - [ ] Completed
 
@@ -121,93 +210,189 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 
 ## Track 3: Deep Dive — Modern Inference (~7 hrs)
 
-Making models fast and small. This track covers every major inference optimization: efficient attention patterns, positional encoding, KV caching, memory management, quantization, decoding strategies, and state-space models.
+Making models fast and small. This track covers every major inference optimization: efficient attention patterns, positional encoding, KV caching, memory management, quantization, decoding strategies, and state-space models. Every program here runs on a CPU in pure Python, so speed and memory figures are counts and illustrative timings, not GPU benchmarks.
 
 **Prerequisites:** `01-foundations/microgpt.py` (transformer forward pass and attention mechanics).
 
 ### Steps
 
 **1. `03-systems/microattention.py`**
-- **You'll learn:** How multi-head, grouped-query, and multi-query attention variants trade quality for throughput by sharing key/value projections.
-- **Builds on:** `microgpt` (self-attention fundamentals).
-- **Key moment:** The side-by-side output comparison showing grouped-query attention matches multi-head quality with fewer parameters.
+- **Outcome:** You run single-head, multi-head (MHA), grouped-query (GQA), multi-query (MQA) and sliding-window attention forward on the same random input and compare an analytic FLOP and memory table with each output's cosine similarity to the MHA output.
+- **Why this step here:** Every later attention optimisation in this track starts from these variants, and GQA/MQA explain why the KV cache of step 4 can be smaller than one key/value pair per head. It needs `microgpt.py`'s per-head attention loop.
+- **Run:** `python 03-systems/microattention.py` (add `--interactive` to change the sequence length, width, head counts or window)
+- **Data:** None to download; inputs and weights are random matrices drawn with seed 42.
+- **Links:** [source](03-systems/microattention.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/transformer.md) · [primary paper](https://arxiv.org/abs/1706.03762) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microattention.gif)
+- **Predict before you run:** With 4 query heads, 2 GQA key/value heads, a 32-position sequence and a window of 8, what reductions will the takeaways print for GQA's KV memory, MQA's KV memory and the sliding window's attention cost?
+  <details><summary>Check your prediction</summary>
+
+  GQA cuts KV memory 4 / 2 = 2x, MQA cuts it 4x (4 heads to 1), and the sliding window does 32 / 8 = 4x less attention-score work than full attention at this length. That 4x covers the score computation only: with the projections included, the table's FLOPs are 1,310,720 for MHA and 1,114,112 for the window, about 1.18x, and the untrained pure-Python timings do not measure throughput. The Memory column shows the KV saving: 2,048 floats of cached keys and values for GQA and 1,024 for MQA.
+  </details>
+- **Limits:** Nothing is trained, so the cosine similarities say how close untrained outputs are to the MHA output when the shared weights are averaged, not how well a trained GQA or MQA model performs. Timings are pure Python.
 - **Time:** 40 min
 - [ ] Completed
 
 **2. `03-systems/microflash.py`**
-- **You'll learn:** How Flash Attention reorders the attention computation to work in tiles, avoiding materializing the full N x N attention matrix and reducing memory from O(N^2) to O(N).
-- **Builds on:** `microattention` (standard attention as baseline).
-- **Key moment:** The tiled softmax — computing attention in blocks while maintaining numerical equivalence to the naive implementation via online softmax normalization.
+- **Outcome:** You check that tiled attention with an online softmax matches standard attention to within 10⁻⁶ on five sequence-length/block-size configurations, then tabulate how many score floats each method holds at once.
+- **Why this step here:** It keeps the attention result from step 1 exactly and changes only the order of computation, the idea behind memory-aware kernels. Standard attention from step 1 is the baseline it is checked against.
+- **Run:** `python 03-systems/microflash.py`
+- **Data:** None to download; random query, key and value matrices.
+- **Links:** [source](03-systems/microflash.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/flash-attention.md) · [primary paper](https://arxiv.org/abs/2205.14135) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microflash.gif)
+- **Predict before you run:** In the block-size table for N = 64, how many score floats does one tile hold and how many tiles are processed when B = 8? How many tiles does the (N = 37, B = 8) verification case need?
+  <details><summary>Check your prediction</summary>
+
+  B = 8 holds 8 × 8 = 64 floats per tile and processes ⌈64/8⌉² = 64 tiles. N = 37 with B = 8 needs ⌈37/8⌉² = 25 tiles, the last row and column of tiles being partial.
+  </details>
+- **Limits:** A simulation of the algorithm, not of the hardware: pure Python is slower than the standard version here, there is no fast on-chip memory, and "memory" counts only the score floats held at once (N² for standard, B² for one tile), not the running output and softmax statistics the tiled version also keeps.
 - **Time:** 40 min
 - [ ] Completed
 
 **3. `03-systems/microrope.py`**
-- **You'll learn:** How Rotary Position Embeddings encode position by rotating query and key vectors in 2D subspaces, giving the model relative position awareness without learned position embeddings.
-- **Builds on:** `microattention` (query/key dot product mechanics).
-- **Key moment:** The rotation matrix construction — position information is injected by rotating pairs of dimensions, and the dot product between rotated queries and keys naturally depends on their relative distance.
+- **Outcome:** You rotate query and key pairs by position-dependent angles, show that RoPE scores for the same relative distance agree at different absolute positions while additive sinusoidal scores do not, and compare learned, sinusoidal, RoPE and NTK-scaled RoPE scores beyond the learned table's 64 positions.
+- **Why this step here:** It changes how position enters the query–key dot product from step 1. Step 11 reuses the same 2×2 rotation inside a state-space model.
+- **Run:** `python 03-systems/microrope.py`
+- **Data:** None to download; random vectors.
+- **Links:** [source](03-systems/microrope.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/rope.md) · [primary paper](https://arxiv.org/abs/2104.09864) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrope.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/rope.md)
+- **Predict before you run:** With head dimension 16 and base 10,000, pair `i` rotates by `θᵢ = 10000^(−2i/16)` per position. After how many positions does pair (0,1) complete a full turn, and pair (14,15)?
+  <details><summary>Check your prediction</summary>
+
+  Pair (0,1) has θ₀ = 1, so it turns once every 2π ≈ 6.3 positions. Pair (14,15) has θ₇ = 10000^(−14/16) ≈ 3.16 × 10⁻⁴, a wavelength of about 19,869 positions. The script prints both in its frequency-spectrum table.
+  </details>
+- **Limits:** The relative-position identity is a property of each query–key score. It does not guarantee that a trained model works at lengths it never saw; the extrapolation table compares untrained scores, and NTK scaling is a separate adjustment. The script also misdescribes that adjustment. `ntk_scaled_frequencies` raises the base to `10000 · s^(d/(d−2))`, so each frequency becomes `θ_i · s^(−2i/(d−2))`: with `d = 16` and `s = 4`, pair (0,1) is unchanged, the last pair is slowed by exactly 4×, and the pairs in between by 1.22× to 3.28×. The script's own explanations put the problem and the fix in the high-frequency pairs, and those statements are incorrect: the comments that long contexts fail because high-frequency pairs alias (lines 191-193) and that NTK scaling slows them more (line 204), the docstring "high-frequency pairs may alias … NTK scaling fixes this" (lines 264-265), and the printed lines "high-freq pairs rotate too fast" (304), "NTK scaling: slows high-freq rotations" (305), "Higher scale factors slow all frequencies proportionally" (346) and Key Takeaway 4, "adjusts the base frequency to prevent high-frequency aliasing" (405-406). NTK scaling leaves the fastest pair untouched and rescales the slow pairs; it does not guarantee that a trained model behaves well at longer lengths.
 - **Time:** 35 min
 - [ ] Completed
 
 **4. `03-systems/microkv.py`**
-- **You'll learn:** How KV caching avoids redundant computation during autoregressive generation by storing previously computed key and value tensors and only computing attention for the new token.
-- **Builds on:** `microgpt` (autoregressive generation loop).
-- **Key moment:** The before/after comparison — generation without caching recomputes all previous tokens at every step; with caching, each new token requires only one new key-value pair.
+- **Outcome:** You train a small model (300 steps), greedily generate 16 characters with and without a KV cache, confirm both produce the same tokens, count the multiplications each needs per step, and track cache size, then run a paged-allocation trace.
+- **Why this step here:** It removes the repeated work in `microgpt.py`'s generation loop: without a cache every step recomputes keys and values for the whole prefix. Step 5 manages the memory this cache occupies.
+- **Run:** `python 03-systems/microkv.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](03-systems/microkv.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/kv-cache.md) · [primary paper](https://arxiv.org/abs/2211.05102) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microkv.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/kv-cache.md)
+- **Predict before you run:** The model has 16-wide embeddings, 2 heads, one layer and a 27-symbol vocabulary. How many multiplications do the two methods need at step 1 and at step 16, and how many floats does the cache hold after 16 positions?
+  <details><summary>Check your prediction</summary>
+
+  Step 1: 3,536 for both (one position to process either way). Step 16: 53,936 without the cache versus 4,016 with it, a 13.4x difference; over all 16 steps the ratio is 7.5x. The cache grows by 2 × 1 × 16 = 32 floats per position, reaching 512 floats (2,048 bytes as float32). Running the script's two generation functions with random weights gave exactly these counts and identical tokens; the counts do not depend on the weight values.
+  </details>
+- **Limits:** The match is exact because both paths use the same weights, the same causal attention and greedy decoding. Multi-query attention or a quantized cache would change the outputs and are different designs. The closing signpost's "~5.2 GB" for LLaMA-2 70B does not follow from the script's own per-position formula: 80 layers × 8,192 channels × 4,096 positions × 2 (K and V) × 2 bytes is about 10.7 GB without grouped-query attention, and about 1.3 GB with the 8 key/value heads LLaMA-2 70B actually uses.
 - **Time:** 35 min
 - [ ] Completed
 
 **5. `03-systems/micropaged.py`**
-- **You'll learn:** How PagedAttention manages KV cache memory using virtual memory concepts — fixed-size blocks, a page table, and on-demand allocation — eliminating memory fragmentation during batched inference.
-- **Builds on:** `microkv` (KV cache fundamentals).
-- **Key moment:** The page table lookup — instead of contiguous pre-allocated memory, the cache maps logical positions to physical blocks, enabling efficient memory sharing across sequences.
+- **Outcome:** You compare a naive allocator that reserves the maximum length for each request with a paged allocator (16 pages of 4 slots), check that paged attention matches contiguous attention, and walk through a serving timeline, copy-on-write for beam search, continuous batching and an internal-fragmentation table.
+- **Why this step here:** It manages the cache from step 4 the way an operating system manages memory pages, which is what lets many variable-length requests share one memory budget.
+- **Run:** `python 03-systems/micropaged.py`
+- **Data:** None to download; random key and value vectors.
+- **Links:** [source](03-systems/micropaged.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/pagedattention.md) · [primary paper](https://arxiv.org/abs/2309.06180) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/micropaged.gif)
+- **Predict before you run:** With 4 slots per page and a naive reservation of 20 slots, what does the fragmentation table print for a 13-token sequence?
+  <details><summary>Check your prediction</summary>
+
+  `13   4    3  18.8%    7  35.0%`: 4 pages hold 16 slots, so 3 are wasted (3/16 = 18.8%), while the naive reservation wastes 20 − 13 = 7 slots (35.0%).
+  </details>
+- **Limits:** A simulation of allocation and bookkeeping; there are no GPU kernels or real memory, and the serving numbers come from a fixed toy workload of 8 requests.
 - **Time:** 40 min
 - [ ] Completed
 
 **6. `03-systems/microquant.py`**
-- **You'll learn:** How post-training quantization maps 32-bit floating point weights to 8-bit or 4-bit integers using scale and zero-point calibration, shrinking model size with minimal accuracy loss.
-- **Builds on:** `microgpt` (trained model weights).
-- **Key moment:** The quantization error analysis — seeing exactly where precision loss occurs and how calibration data selection affects the scale/zero-point calculation.
+- **Outcome:** You train a model (800 steps), quantize every weight matrix with per-tensor absmax INT8 and INT4, zero-point INT8 and per-channel INT8, and compare loss, round-trip error, size and samples against the float baseline.
+- **Why this step here:** Weights, like the KV cache, are memory. This step introduces the scale and zero-point arithmetic that QLoRA (Track 2) and TurboQuant (step 7) build on.
+- **Run:** `python 03-systems/microquant.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](03-systems/microquant.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/llm-int8.md) · [primary paper](https://arxiv.org/abs/2208.07339) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microquant.gif)
+- **Predict before you run:** The model has 4,192 weights. What sizes and compression ratios will the results table report for float32, INT8 and INT4?
+  <details><summary>Check your prediction</summary>
+
+  16,768 bytes, 4,192 bytes and 2,096 bytes, giving `float32->INT8 = 4.0x` and `float32->INT4 = 8.0x`. The size count ignores the stored scale factors.
+  </details>
+- **Limits:** Scales come from the weights themselves; no calibration data is used. The linked LLM.int8() paper's method — vector-wise quantization of activations and weights plus a 16-bit path for outlier features — is not implemented; this is weight-only round-to-nearest on a 4,192-parameter model.
 - **Time:** 40 min
 - [ ] Completed
 
 **7. `03-systems/microturboquant.py`**
-- **You'll learn:** How a single random rotation applied before scalar quantization gives data-oblivious vector compression with provable inner-product preservation — no calibration data required, unlike the methods in `microquant`.
-- **Builds on:** `microquant` (scalar quantization mechanics), `microembedding` (vectors as the object being quantized).
-- **Key moment:** The rotated-coordinate histogram — raw embedding coordinates have irregular, vector-specific shapes; after one shared random rotation, every vector's coordinates concentrate into the same Beta-shaped marginal, which is what makes a single universal 1-D quantizer optimal for all of them.
+- **Outcome:** You sample one random rotation, quantize 32-dimensional unit vectors with per-vector absmax before and after rotating, compare inner-product error at 1, 2, 4 and 8 bits on anisotropic synthetic vectors and on name embeddings, and try a sign-bit (one bit per random projection) inner-product estimate.
+- **Why this step here:** It applies the scalar quantizer from step 6 to vectors such as cached keys, and asks what a shared random rotation changes when no calibration data is available. It also uses the idea of a vector embedding from Track 1.
+- **Run:** `python 03-systems/microturboquant.py`
+- **Data:** `names.txt`, downloaded on first run; 300 names become embeddings by a random projection of their bigram counts, and 300 anisotropic vectors are synthetic.
+- **Links:** [source](03-systems/microturboquant.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/turboquant.md) · [primary paper](https://arxiv.org/abs/2504.19874) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microturboquant.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/turboquant.md)
+- **Predict before you run:** (1) `absmax_quantize` uses `2^(bits−1) − 1` levels per sign, with 1 level when `bits` is 1. What grids do the 1-bit and 2-bit rows use? (2) `qjl_estimate_inner_product` returns `(π/2) × mean(sign agreement)`. What does it return for two identical unit vectors?
+  <details><summary>Check your prediction</summary>
+
+  (1) Both use the same three values {−1, 0, +1}, so the two rows quantize every vector identically, and neither is a true 1-bit or 2-bit code. Their printed errors still differ slightly (0.0167 and 0.0173 for the synthetic baseline in one run) because each row draws a fresh random sample of 2,000 vector pairs. (2) π/2 ≈ 1.571 rather than 1. For Gaussian projections the expected sign agreement is 1 − 2·arccos(ρ)/π, so the estimate's expectation is arcsin(ρ), not the cosine ρ. At ρ = 0.5 the expected agreement is exactly 1/3 and the expected estimate is arcsin(0.5) = π/6 ≈ 0.5236, a bias of about +0.024; a finite draw scatters around that (one draw with 40,000 projections returned 0.526, and the standard deviation at that size is about 0.007). The estimator is biased except at ρ = 0.
+  </details>
+- **Limits:** The paper is Zandieh, Daliri, Hadian and Mirrokni, "TurboQuant: Online Vector Quantization with Near-optimal Distortion Rate" (arXiv:2504.19874), as the linked card says. The script's header comment and the implementation guide (`docs/implementation.md`) attribute it to "Aamand et al." with the title "…with Optimal Bit Budget"; that attribution and title are incorrect. The script is a toy: it uses per-vector absmax instead of the paper's precomputed Lloyd–Max codebooks, and its sign demo applies paired signs to whole vectors. The paper's inner-product quantizer instead quantizes the residual left by the MSE quantizer and estimates inner products against an unquantized query, which makes that estimate unbiased; none of that is implemented here.
 - **Time:** 45 min
 - [ ] Completed
 
 **8. `03-systems/microbeam.py`**
-- **You'll learn:** How beam search, top-k, top-p (nucleus), and temperature sampling explore the output distribution differently, producing outputs that range from deterministic to creative.
-- **Builds on:** `microgpt` (autoregressive token generation).
-- **Key moment:** Comparing beam search (finds the most probable sequence) against nucleus sampling (samples from the dynamic top-p portion of the distribution) on the same prompt — same model, completely different outputs.
+- **Outcome:** You train a target model (16-dimensional, 700 steps) and a smaller draft model (8-dimensional, 500 steps), then compare greedy, temperature, top-k, top-p, beam search and speculative decoding on the same prompts, measure diversity over 20 seed letters, and report the draft acceptance rate.
+- **Why this step here:** Every program so far either sampled or took the most likely token; this step makes that choice the subject. It reuses the cached generation of step 4.
+- **Run:** `python 03-systems/microbeam.py`
+- **Data:** `names.txt`, downloaded on first run.
+- **Links:** [source](03-systems/microbeam.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/nucleus-sampling.md) · [primary paper](https://arxiv.org/abs/1904.09751) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbeam.gif)
+- **Predict before you run:** `decode_top_p` adds tokens in order of probability until their total reaches `p`. With next-token probabilities 0.5, 0.3, 0.15 and 0.05 and `p = 0.9`, which tokens are kept and with what renormalised probabilities?
+  <details><summary>Check your prediction</summary>
+
+  The first three (0.5 + 0.3 + 0.15 = 0.95 ≥ 0.9), renormalised to about 0.526, 0.316 and 0.158; the 0.05 token can never be sampled at this step.
+  </details>
+- **Limits:** The speculative path picks each draft token by argmax rather than sampling it from the draft distribution, so the exact-distribution guarantee of Leviathan et al. does not carry over; read the acceptance rate as a demo statistic. Nothing runs in parallel, so there is no wall-clock speedup. The linked card covers nucleus sampling only.
 - **Time:** 35 min
 - [ ] Completed
 
 **9. `03-systems/microssm.py`**
-- **You'll learn:** How state-space models replace attention with a linear recurrence that processes sequences in O(N) time, achieving transformer-competitive quality without the quadratic attention bottleneck.
-- **Builds on:** `microgpt` (sequence modeling baseline for comparison).
-- **Key moment:** The dual-mode computation — the same SSM parameters support both a parallel convolution mode (fast training) and a sequential recurrence mode (fast inference), unified by the same math.
+- **Outcome:** You build a one-layer selective state-space model (Euler discretization, input-dependent step size Δ and input-dependent B and C), train it for 800 steps on 250 names, sample names, and read an RNN/transformer/SSM comparison table.
+- **Why this step here:** It replaces attention and its growing cache (step 4) with a fixed-size state updated by a linear recurrence, and makes that update depend on the input.
+- **Run:** `python 03-systems/microssm.py`
+- **Data:** `names.txt`, downloaded on first run; training uses 250 names.
+- **Links:** [source](03-systems/microssm.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microssm.gif)
+- **Predict before you run:** Δ is `softplus(W x + b)` with every bias initialised to −2. What is Δ for a channel whose projected input is 0, and how many floats of state does the layer carry per token, however long the sequence?
+  <details><summary>Check your prediction</summary>
+
+  softplus(−2) = ln(1 + e⁻²) ≈ 0.127, a small step that mostly preserves the state. The state is 8 × 16 = 128 floats, printed as `SSM state size per layer: 128`, against a KV cache that grows with every position.
+  </details>
+- **Limits:** The source cites Mamba (Gu and Dao, 2023) and runs the recurrence sequentially; there is no parallel scan, it uses Euler rather than zero-order-hold discretization, and the linked Mamba-2 card's structured state space duality is not implemented. The comparison table states asymptotic costs; it is not a measurement.
 - **Time:** 35 min
 - [ ] Completed
 
 **10. `03-systems/microdiscretize.py`**
-- **You'll learn:** How Euler, ZOH, and trapezoidal discretization turn continuous-time SSM equations into discrete recurrences, and why each method creates different stability properties and inductive biases.
-- **Builds on:** `microssm` (SSM recurrence mechanics).
-- **Key moment:** The stability table — Euler diverges at large delta while ZOH/trapezoidal remain bounded for any step size, because exp() maps the entire negative real line to (0,1).
+- **Outcome:** You train the same small SSM three times — Euler, zero-order hold (ZOH) and trapezoidal discretization — on an irregular sine-prediction task and a running-parity task, then print a stability table of |Ā| against the step size Δ.
+- **Why this step here:** Step 9 used Euler discretization; this step shows what that choice costs and what the exponential alternatives buy.
+- **Run:** `python 03-systems/microdiscretize.py`
+- **Data:** None to download; sine and parity sequences are generated in the script.
+- **Links:** [source](03-systems/microdiscretize.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdiscretize.gif)
+- **Predict before you run:** The table uses a = −0.5. What does the row for Δ = 4.0 print for |Euler|, |ZOH| and the stability label?
+  <details><summary>Check your prediction</summary>
+
+  |Euler| = |1 + 4 × (−0.5)| = 1.0000, |ZOH| = |Trap| = e⁻² ≈ 0.1353, and the label is `NO — DIVERGES` because the script tests |Ā| < 1 strictly. At exactly 1 the state neither decays nor grows; Euler first grows the state at Δ = 5 (|Ā| = 1.5).
+  </details>
+- **Limits:** The source cites Mamba-3 (arXiv:2603.15569) Section 3 and S4; its trapezoidal rule splits the exact ZOH input term between `x_t` and `x_(t−1)` with a fixed weight. That is a toy, not Mamba-3's rule: Mamba-3 multiplies the previous input by `Δ·e^(ΔA)` and weights the two terms with a data-dependent λ, and its paper notes that Mamba-1 and Mamba-2, though described as ZOH, implement an exponential-Euler rule (ZOH's `exp(ΔA)` state factor with input term `Δ·B`). Mamba-3 drops the separate short convolution only in combination with added B and C biases, an empirical result this script does not reproduce. The linked Mamba-2 card's structured state space duality is not implemented. Task accuracies come from one seed.
 - **Time:** 40 min
 - [ ] Completed
 
 **11. `03-systems/microcomplexssm.py`**
-- **You'll learn:** How complex-valued SSM eigenvalues enable rotation (not just decay), why this is mathematically identical to applying data-dependent RoPE rotation matrices, and why real-only SSMs fail at parity.
-- **Builds on:** `microssm` (SSM state transitions), `microrope` (rotation matrices, helpful but not required).
-- **Key moment:** The equivalence proof — complex and real+RoPE forward passes produce identical outputs to floating-point precision, proving that complex multiply IS 2x2 rotation.
+- **Outcome:** You show that a complex-valued diagonal SSM and a real SSM that rotates paired state dimensions with 2×2 matrices (a data-dependent RoPE) produce the same outputs to floating-point precision, then train real-only, complex and rotation variants on running parity.
+- **Why this step here:** It joins the SSM of steps 9–10 with the rotation of step 3: a complex multiply is a scaled 2×2 rotation.
+- **Run:** `python 03-systems/microcomplexssm.py`
+- **Data:** None to download; random bit sequences with running-XOR labels.
+- **Links:** [source](03-systems/microcomplexssm.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcomplexssm.gif)
+- **Predict before you run:** Apply R(θ) with θ = π and r = 1 to the state pair (0.6, 0.0). What comes out, and why can the real-only variant (`a_n = exp(log_A_n)`) never do the same?
+  <details><summary>Check your prediction</summary>
+
+  (−0.6, ≈7 × 10⁻¹⁷): a half turn flips the sign, the same result as multiplying 0.6 by e^(iπ). The real-only variant's `a_n = exp(log_A_n)` is always positive, so it can shrink or grow the state but never flip its sign, and a running parity needs a flip on every 1-bit. A negative real eigenvalue could flip the sign; this parameterisation rules it out.
+  </details>
+- **Limits:** The source cites Mamba-3 (arXiv:2603.15569) Proposition 3 and RoPE (Su et al., 2021); the linked Mamba-2 card's structured state space duality is not implemented. The equivalence check uses fixed angles; the trained "complex" and "rotation" variants run the same real-arithmetic update from the same initialization distribution, with every angle starting near π (the parity solution), so differences between those two come only from their random draws. Parity accuracies come from one training run per variant.
 - **Time:** 40 min
 - [ ] Completed
 
 **12. `03-systems/microroofline.py`**
-- **You'll learn:** How the roofline model classifies operations as memory-bound or compute-bound, and why MIMO SSM state updates (matmul) outperform SISO (outer product) on GPUs despite doing 11x more FLOPs.
-- **Builds on:** `microssm` (SSM state updates), `microflash` (hardware-aware algorithm design, helpful but not required).
-- **Key moment:** The ASCII roofline plot — seeing SISO at AI≈2 (0.7% GPU utilization) versus MIMO at AI≈32 (shifting toward compute-bound) makes the hardware argument visceral.
+- **Outcome:** You compute arithmetic intensity (FLOPs per byte) for a vector add, an outer product and two matrix multiplies, place pure-Python timings on an ASCII roofline built from assumed CPU peaks (50 GFLOPS, 100 GB/s), compare SISO and rank-16 MIMO SSM state updates, and train SISO and rank-4 MIMO SSMs on dual-sine prediction.
+- **Why this step here:** It uses hardware arithmetic to show why writing the SSM update of steps 9–11 as a matrix multiply (MIMO) instead of an outer product (SISO) raises arithmetic intensity, which matters on accelerators even though it adds FLOPs.
+- **Run:** `python 03-systems/microroofline.py`
+- **Data:** None to download; sine sequences are generated in the script.
+- **Links:** [source](03-systems/microroofline.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/roofline.md) · [primary paper](https://dl.acm.org/doi/10.1145/1498765.1498785) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microroofline.gif)
+- **Predict before you run:** With 16 states and 8 channels, the SISO update costs 3 × 16 × 8 FLOPs and reads (16×8 + 16 + 8) float64 values per step; the rank-16 MIMO update costs 16×8 + 2 × 16 × 8 × 16 FLOPs and reads (16×8 + 16×16 + 16×8) values. What arithmetic intensities and FLOP ratio will Phase 3 print?
+  <details><summary>Check your prediction</summary>
+
+  SISO: 384 / 1,216 bytes ≈ 0.32 FLOPs/byte; MIMO-16: 4,224 / 4,096 bytes ≈ 1.03, with 11.0x the FLOPs. In the separate operation table the 16×16 outer product sits at 2.00 and the 256×256 rank-16 matrix multiply at 32.00; under the script's byte counts that larger figure comes from the larger matrix size, not from the rank.
+  </details>
+- **Limits:** The peak figures are assumed constants, not measured, and pure-Python timings are dominated by interpreter overhead, so the roofline placement is illustrative; nothing runs on a GPU. The source cites Mamba-3 (arXiv:2603.15569) for the MIMO update and Williams et al. (2009) for the roofline model.
 - **Time:** 40 min
 - [ ] Completed
 
