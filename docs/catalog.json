@@ -506,6 +506,17 @@
     "adaptation_note": "Implements exact brute-force search and random-hyperplane locality-sensitive hashing; the source cites Indyk & Motwani (1998) and Charikar (2002). It does not implement the HNSW graph index of the linked card."
   },
   {
+    "tier": "03-systems",
+    "name": "microwatermark",
+    "display": "Green-List Watermarking",
+    "thesis": "Keyed green-list watermarking and its z-test detector, on a tiny language model trained here.",
+    "lines": 1413,
+    "paper_slug": "green-list-watermark",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": "Trains a 1,992-parameter 2-token-context MLP on a 48-word synthetic grammar, then generates with the paper's keyed soft green-list bias (gamma 0.25, delta 2.0; hard rule at gamma 0.5 as a comparison) and detects with Eq. 3 from the tokens and key alone. The unwatermarked, sharpened and hard-rule arms are alternative decoders of the same trained model, not trained arms. Toy adaptations: green lists from a keyed blake2b of the previous token (h = 1) seeding random.Random; the first generated token is not scored; the bias is added after temperature scaling; DEDUP (repeated pairs counted once) is the headline detector and the plain Eq. 3 test is shown as uncalibrated on this repetitive text. No OPT/C4 or paper-scale result, and no robustness or security claim."
+  },
+  {
     "tier": "04-agents",
     "name": "microbandit",
     "display": "Multi-Armed Bandit",

@@ -1,6 +1,6 @@
 # Learning Path
 
-A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 39 of the 51 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 40 of the 52 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ## How to Use This Guide
 
@@ -17,10 +17,10 @@ A structured guide through the no-magic implementations. Pick a track based on y
 |-------|-------|------|
 | 1. Weekend Sprint: Transformers | Tokenization through attention | ~4 hrs |
 | 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~4 hrs 55 min |
-| 3. Deep Dive: Modern Inference | Making models fast and small | ~7 hrs |
+| 3. Deep Dive: Modern Inference | Making models fast and small | ~8 hrs 45 min |
 | 4. Deep Dive: Generative Models | How models create new data | ~4 hrs |
 | 5. Deep Dive: Retrieval & Search | Connecting models to external knowledge | ~3 hrs |
-| 6. Full Curriculum | 39 of the 51 scripts, dependency-ordered | ~22 hrs |
+| 6. Full Curriculum | 40 of the 52 scripts, dependency-ordered | ~28 hrs 20 min |
 | 7. Agent Algorithms | Search and reasoning in autonomous agents | ~3 hrs |
 
 ---
@@ -257,6 +257,8 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 
 ## Track 3: Deep Dive — Modern Inference (~7 hrs)
 
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 8 hrs 45 min.
+
 Making models fast and small. This track covers every major inference optimization: efficient attention patterns, positional encoding, KV caching, memory management, quantization, decoding strategies, and state-space models. Every program here runs on a CPU in pure Python, so speed and memory figures are counts and illustrative timings, not GPU benchmarks.
 
 **Prerequisites:** `01-foundations/microgpt.py` (transformer forward pass and attention mechanics).
@@ -443,6 +445,21 @@ Making models fast and small. This track covers every major inference optimizati
 - **Time:** 40 min
 - [ ] Completed
 
+**13. `03-systems/microwatermark.py`**
+- **Outcome:** You train a 1,992-parameter word-level language model (two-token context, 8-dimensional embeddings, 24 tanh units) on a 48-word synthetic grammar, then generate 200-token texts with and without a keyed green-list watermark: a keyed hash of the previous token picks a green quarter of the vocabulary, and the sampler adds δ = 2 to the green logits before sampling. A detector that sees only the tokens and the key turns the green count into a z-score, plain (every scored pair) and deduplicated (each distinct pair once). The program scores 200 watermarked texts against wrong-key, unwatermarked, grammar-text, repetitive, shuffled and sharpened controls and prints 30 frozen pass/fail gates.
+- **Why this step here:** Step 8 compares rules for *which* token to pick; this step changes the distribution a sampler draws from, in a way that depends on a secret key, and adds the other half of the scheme: a statistical test that needs no model at all. It needs only a softmax over logits and sampling at a temperature.
+- **Run:** `python 03-systems/microwatermark.py`
+- **Data:** None to download; the grammar sentences are generated in the script.
+- **Links:** [source](03-systems/microwatermark.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/green-list-watermark.md) · [primary paper](https://arxiv.org/abs/2301.10226) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microwatermark.gif)
+- **Predict before you run:** (1) For 200 generated tokens at γ = 0.25 with no watermark, how many green pairs does Eq. 3 expect, and how many does z > 4 require? (2) The 200 unwatermarked model texts are scored with 200 keys that never generated anything. Which detector, plain or deduplicated, flags more of these 40,000 innocent (text, key) pairs at z > 4, and why?
+  <details><summary>Check your prediction</summary>
+
+  (1) 200 tokens give 199 scored pairs, because the first generated token's green list depends on a prompt token the detector never sees. The expected count is 0.25 × 199 = 49.75 with standard deviation √(199 × 0.25 × 0.75) = 6.108, so z > 4 needs more than 49.75 + 4 × 6.108 = 74.2, that is, at least 75 green pairs. (2) The plain test, by far: in the default seed-42 run under CPython 3.12.8 it flags a fraction 0.01087 of the pairs (about 435 of 40,000) and its z has standard deviation 1.69, while the deduplicated test flags 1 of 40,000 with standard deviation 0.94. A repeated (previous, token) pair has one green/red coin, so counting every repeat counts the same coin again and widens the plain statistic's spread; the Gaussian tail of z = 4 that the paper quotes (about 3 × 10⁻⁵) assumes independent coins.
+  </details>
+- **Limits:** A toy grammar and model, a one-token hash window and public demo keys: no OPT or C4 result, no paper-scale number, no robustness or security claim, and no rate here transfers to real text. The gates were redesigned after a first look at the same seeded data, so passing them is a consistency check of the mechanism, not independent confirmation. The plain test is not calibrated on this repetitive text, the deduplicated test is conservative rather than exact, the "human" control is more grammar text, and token-shuffled watermarked text is not an exact null. Theorem 4.2's lower bound is checked only loosely: the check is non-tight except in near-deterministic contexts. With sharpened sampling (t = 0.3) and the bias added after temperature, the deduplicated test flags 0.110 of watermarked texts at 200 tokens against 0.970 at t = 1; adding the bias before temperature, a report-only arm, gives 0.980. The reference output comes from CPython 3.12.8.
+- **Time:** 60 min
+- [ ] Completed
+
 ---
 
 ## Track 4: Deep Dive — Generative Models (~4 hrs)
@@ -509,7 +526,9 @@ Connecting models to external knowledge. This track covers how to represent text
 
 ## Track 6: Full Curriculum (~22 hrs)
 
-39 of the 51 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 28 hrs 20 min.
+
+40 of the 52 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ### Milestone 1: Text Representation (1.5 hrs)
 
@@ -610,9 +629,9 @@ Efficient attention patterns, positional encoding, and memory-aware computation.
 
 ### Milestone 11: Inference Systems (2.5 hrs)
 
-The exercises in this milestone now total 3 hrs 50 min; the heading estimate is kept unchanged so existing links to it keep working.
+The exercises in this milestone now total 4 hrs 50 min; the heading estimate is kept unchanged so existing links to it keep working.
 
-KV caching, memory management, quantization, distillation into a smaller model, and decoding strategies.
+KV caching, memory management, quantization, distillation into a smaller model, decoding strategies, and watermarking generated text with a keyed logit bias that a z-test can detect.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
@@ -622,6 +641,7 @@ KV caching, memory management, quantization, distillation into a smaller model, 
 | 29 | `03-systems/microturboquant.py` | 45 min | - [ ] |
 | 30 | `02-alignment/microdistill.py` | 35 min | - [ ] |
 | 31 | `03-systems/microbeam.py` | 35 min | - [ ] |
+| 32 | `03-systems/microwatermark.py` | 60 min | - [ ] |
 
 ### Milestone 12: Advanced Systems (1.5 hrs)
 
@@ -629,9 +649,9 @@ State-space models, gradient checkpointing, and parallelism — the frontier of 
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 32 | `03-systems/microssm.py` | 35 min | - [ ] |
-| 33 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
-| 34 | `03-systems/microparallel.py` | 30 min | - [ ] |
+| 33 | `03-systems/microssm.py` | 35 min | - [ ] |
+| 34 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
+| 35 | `03-systems/microparallel.py` | 30 min | - [ ] |
 
 ### Milestone 13: Mamba-3 Deep Dive (2 hrs)
 
@@ -639,9 +659,9 @@ The SSM frontier — discretization methods, complex eigenvalue dynamics, and ha
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 35 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
-| 36 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
-| 37 | `03-systems/microroofline.py` | 40 min | - [ ] |
+| 36 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
+| 37 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
+| 38 | `03-systems/microroofline.py` | 40 min | - [ ] |
 
 ### Milestone 14: Agent Algorithms (3 hrs)
 
@@ -649,8 +669,8 @@ How agents search and reason — tree search for planning and tool-augmented rea
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 38 | `04-agents/micromcts.py` | 90 min | - [ ] |
-| 39 | `04-agents/microreact.py` | 90 min | - [ ] |
+| 39 | `04-agents/micromcts.py` | 90 min | - [ ] |
+| 40 | `04-agents/microreact.py` | 90 min | - [ ] |
 
 ---
 

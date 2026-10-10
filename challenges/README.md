@@ -32,6 +32,7 @@ Each challenge presents a code snippet or scenario drawn directly from one of th
 | [tokenizer.md](tokenizer.md)   | `01-foundations/microtokenizer.py` | Merge order, priority replay, vocab size, corpus collapse                  |
 | [turboquant.md](turboquant.md) | `03-systems/microturboquant.py`    | Rotation-hurts-on-sparse, Haar uniformity, QJL sign-bit bias, orthogonality threshold |
 | [vae.md](vae.md)               | `01-foundations/microvae.py`       | Reparameterization trick, KL collapse, log_var clamping, latent structure  |
+| [watermark.md](watermark.md)   | `03-systems/microwatermark.py`     | Wrong-key null, a key without a bias (δ = 0), low-entropy steps, repeated pairs and the plain z-test's inflated spread |
 
 ## How to Use
 
