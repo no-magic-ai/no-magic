@@ -77,6 +77,7 @@ DISPLAY_OVERRIDES: dict[str, str] = {
     "microspeculative": "Speculative Decoding",
     "microvectorsearch": "Vector Search",
     "microwatermark": "Green-List Watermarking",
+    "microcot": "Reasoning Traces and Self-Consistency",
     "microbandit": "Multi-Armed Bandit",
     "micromcts": "Monte Carlo Tree Search",
     "micromemory": "Memory-Augmented Network",
@@ -103,6 +104,7 @@ SCRIPT_TO_PAPER: dict[str, str] = {
     "microcheckpoint": "gradient-checkpointing",
     "microcomplexssm": "mamba-2",
     "microconv": "lenet-5",
+    "microcot": "self-consistency",
     "microdiffusion": "ddpm",
     "microdiscretize": "mamba-2",
     "microdistill": "distillation",
@@ -242,6 +244,22 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "linked Mamba-2 card's structured state space duality is not implemented.",
     ),
     "microconv": TeachingContract("train_infer", "in_script"),
+    "microcot": TeachingContract(
+        "comparison",
+        "in_script",
+        "Trains two arms of a 17,345-parameter position-slot MLP (no attention) from one "
+        "initialization on four-digit sums mod 10: a direct-answer arm and a trace arm "
+        "trained Nye-style on written partial sums along three fixed operand orders "
+        "(L/R/T), so route diversity is built into the training data rather than sampled "
+        "from a pretrained model; Wei et al.'s few-shot prompting is not implemented. The "
+        "trace arm is decoded greedily and by self-consistency (40 samples at temperature "
+        "0.7, answer parsed after '#', majority vote with an Eq. 1 tie rule). At seed 42 the "
+        "vote beats greedy by +0.104, partly by undoing greedy's poor route choice; over the "
+        "best single forced route, chosen post hoc, the margin is +0.068. Trace versus direct "
+        "(+0.052, p = 0.083, unequal budgets) is not claimed, and the held-out slice leans "
+        "toward repeated digits. Toy scale: no emergence, faithful-reasoning, paper-scale or "
+        "general-reasoning claim.",
+    ),
     "microdiffusion": TeachingContract("train_infer", "in_script"),
     "microdiscretize": TeachingContract(
         "comparison",

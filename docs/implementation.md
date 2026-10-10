@@ -42,7 +42,8 @@ no-magic/
     ├── microquant.py
     ├── microflash.py
     ├── microbeam.py
-    └── microwatermark.py
+    ├── microwatermark.py
+    └── microcot.py
 ```
 
 ## Design Constraints (Enforced Across All Scripts)
@@ -1136,6 +1137,60 @@ For each attention variant:
 
 **Expected complexity:** ~1,600 lines including the comment and docstring commentary. Pure-Python lists and a hand-written backward pass; no autograd engine.
 
+### `microcot.py` — Reasoning Traces and Self-Consistency
+
+> _"Train a tiny model to write its own reasoning steps, then sample several traces and let their answers vote — and measure honestly how much of the gain is the vote itself."_
+
+**What it teaches:**
+
+- Writing intermediate results as learned tokens: a trace arm trained on `route p1 p2 p3 # answer .` next to a direct arm trained on `answer .`, both from one initialization on the same problems (supervised scratchpad training in the Nye et al. lineage, not Wei et al.'s few-shot prompting of a frozen large model)
+- The self-consistency decoder of Wang et al. (2023, Sec. 2): sample k traces at temperature τ, parse the answer after `#`, and take `argmax_a Σ_i 1(a_i = a)`; Eq. 1's length-normalized path probability `exp((1/K) Σ_k log P(t_k | …))` and the other Table 1 aggregations as report-only alternatives
+- Why route diversity matters (Sec. 3.4–3.5): three equally valid routes (left to right, right to left, pairwise), announced by a route token the model must emit, so sampled traces reach the answer by different intermediate sums
+- An explicit tie rule (higher sum of Eq. 1 weights, then the smallest digit) and abstention when no sample parses, both exercised on hand-made samples and on the real model
+- Honest baselines: greedy decoding of the same trace model (the paper's baseline), single samples, every route forced in turn (the vote's margin over the best route is labeled post hoc), a direct-answer arm, input-lookup shortcuts, and faithfulness probes that overwrite written steps
+
+**Algorithm outline:**
+
+```text
+1. Check the aggregator on hand-made samples (ties, abstention, k = 1, invalid samples, count
+   versus weight, both weighted averages) and a binomial identity by enumeration
+2. Rebuild the frozen split from embedded lists of 90 test and 50 reserved development operand
+   multisets (SHA-256 checked): 2,000 training problems, a 500-problem test slice; assert zero
+   overlap and fit 1-3-position lookup baselines on training problems
+3. Train a 17,345-parameter position-slot MLP (hidden 48, no attention) twice from one
+   initialization with per-sequence SGD and hand-written gradients: direct (lr 0.1, 90 epochs)
+   and trace (lr 0.03, 150 epochs; the route of each example is drawn uniformly)
+4. Decode both arms greedily on the test slice; print model-written traces
+5. Sample 40 traces per problem at τ = 0.3, 0.5, 0.7, 1.0, 1.5 from one stream (in that order);
+   aggregate the first k = 1, 5, 10, 20, 40 with all five Table 1 rules
+6. At τ = 0.7: per-problem route diversity, vote versus greedy with exact McNemar tests, the
+   voting arithmetic of two problems, forced-route accuracies and error overlap, faithfulness
+   probes, per-permutation-class results; print the gates and raise RuntimeError on a failure
+```
+
+**Dataset:** Four-digit problems `a+b+c+d=` with answer `(a+b+c+d) mod 10`, generated inline. The partition is by operand multiset, so no permutation of a held-out problem is trained on. The held-out multisets are those no earlier design probe evaluated, which skews the test slice toward repeated digits (all-distinct 0.386 against 0.504 of all problems). The reserved development multisets (624 problems) are excluded from training and never evaluated by the program.
+
+**Key implementation details:**
+
+- Gold-route functions build training targets, forced probe inputs and scores only; every decoder receives only prompt tokens and weights, so traces are model-written and no vote is taken over predefined answers
+- Four separate random streams (initialization 42, shuffle 43 per arm, greedy/inspection 44, sampling 45); the 12 printed inspection samples never touch the sampling stream, and the τ = 0.7 votes depend on the 0.3 and 0.5 sweeps having consumed the stream first
+- Eq. 1 weights use temperature-1 log-probabilities even for hotter samples; there is no top-k cut (vacuous at 17 tokens); greedy breaks logit ties toward the lowest token id
+- The default is pre-registered and frozen: the program must reproduce the design study's seed-42 numbers exactly under CPython 3.12.8 (D9); every floating-point sum keeps its order, and no environment variable, argument or smoke mode changes it
+- The source lists thirteen disclosures (D1–D13), including constructed route diversity, the post hoc best-route margin, unequal budgets, partial faithfulness and the earlier single-route DESIGN NO-GO
+
+**Success criteria (pre-registered before any code of this design; checked on the seed-42 default):**
+
+- G1 training: each arm's final training NLL per completion token ≤ 0.5 × initial (trace scored under all three routes) and parameters changed
+- G2 leakage: zero multiset and ordered-tuple overlap among training, reserved and test problems; every 1-, 2- and 3-position lookup baseline ≤ 0.15 on the test slice
+- G3 greedy trace accuracy ≥ 0.60, and at least half of the problems sample two routes in ≥ 4 of 40 samples each at τ = 0.7
+- G4 majority vote at k = 40, τ = 0.7 beats greedy by ≥ +0.05 with exact two-sided McNemar p < 0.01, and the k = 10 vote is not below greedy
+- G5 aggregator checks and the binomial identity pass; ties and abstentions on the real model are printed
+- G6 two default runs print identical output apart from lines labeled `[timing]`; G7 the default takes at most 360 s under CPython 3.12.8 on the M-series qualification host (product limit 420 s); G8 the frozen design-study numbers reproduce exactly. G6–G8 are checked outside the program
+- Report-only, never claimed: direct versus trace (+0.052, p = 0.083 at seed 42, unequal budgets), the margin over the best forced route (+0.068, chosen post hoc), faithfulness shares, per-class results; no emergence, faithful-reasoning, paper-scale or general-reasoning claim
+- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The shipped program has not yet been timed; its frozen design prototype took 316.14 s on Apple M1 Pro with CPython 3.12.8. Legacy Intel is not measured
+
+**Expected complexity:** ~1,100 non-empty lines including the comment and docstring commentary (the frozen 792-line probe plus the commenting standard and the embedded split). Pure-Python lists and a hand-written backward pass; no autograd engine.
+
 ---
 
 ## Implementation Priority & Sequencing
@@ -1154,6 +1209,7 @@ Scripts were built in this order to manage dependencies and validate the shared 
 | **Phase 8** | `microsft.py`, `microdistill.py`                                     | microsft pretrains and then supervised-fine-tunes the same microgpt-style decoder (Phase 2 autograd pattern) and precedes the preference stages of Phase 5 in the InstructGPT order. microdistill was implemented after it as a separate child change; it uses plain-float MLPs with manual gradients and imports nothing from microsft. |
 | **Phase 9** | `microrome.py`                                                       | Trains its own small decoder with manual gradients, then edits it in closed form; it needs the decoder concepts of microgpt and imports nothing from other scripts. |
 | **Phase 10** | `microwatermark.py`                                                 | Trains its own small word-level model with manual gradients, then samples it with and without a keyed logit bias and detects the bias with a model-free z-test; it needs only softmax sampling (microbeam) and imports nothing from other scripts. |
+| **Phase 11** | `microcot.py`                                                      | Trains its own position-slot model twice (direct and trace) with manual gradients, then compares greedy and self-consistency decoding; it needs autoregressive sampling (microgpt, microbeam) and the idea of supervised targets (microsft) and imports nothing from other scripts. |
 
 ### Dependency Notes
 
