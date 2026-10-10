@@ -11,6 +11,7 @@ Each challenge presents a code snippet or scenario drawn directly from one of th
 | [attention.md](attention.md)   | `03-systems/microattention.py`     | Scaling factor, identical keys, causal masking, sliding window             |
 | [complexssm.md](complexssm.md) | `03-systems/microcomplexssm.py`    | Real-only parity failure, complex rotation matrix, data-dependent rotation |
 | [discretize.md](discretize.md) | `03-systems/microdiscretize.py`    | Euler stability, trapezoidal alpha, ZOH unconditional stability            |
+| [distill.md](distill.md)       | `02-alignment/microdistill.py`     | Temperature softening, T² gradient scaling, mixed-objective optimum, batch-mean 1/B under SGD |
 | [dpo.md](dpo.md)               | `02-alignment/microdpo.py`         | Beta parameter, identical completions, reference divergence                |
 | [embedding.md](embedding.md)   | `01-foundations/microembedding.py` | Temperature, false negatives, augmentation, representation collapse        |
 | [gan.md](gan.md)               | `01-foundations/microgan.py`       | Gradient saturation, mode collapse, training balance                       |

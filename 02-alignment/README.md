@@ -4,12 +4,13 @@ Methods for steering, fine-tuning, and aligning models after pretraining. These 
 
 ## Scripts
 
-Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 11 programs in this tier: 10 `micro*` programs and the unprefixed comparison `adam_vs_sgd.py`.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 12 programs in this tier: 11 `micro*` programs and the unprefixed comparison `adam_vs_sgd.py`.
 
 | Script              | Algorithm                                                             | Time   | Status | Video                                             |
 | ------------------- | --------------------------------------------------------------------- | ------ | ------ | ------------------------------------------------- |
 | `adam_vs_sgd.py`    | Adam vs. SGD with momentum on the same character bigram model (trained comparison) | _unmeasured_ | not recorded | no preview |
 | `microbatchnorm.py` | Batch Normalization — internal covariate shift and running statistics | 0m 34s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microbatchnorm.gif) |
+| `microdistill.py`   | Knowledge distillation: a frozen teacher's temperature-softened probabilities train a smaller student | 0m 02s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdistill.gif) |
 | `microdpo.py`       | Direct Preference Optimization                                        | 2m 42s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdpo.gif)       |
 | `microdropout.py`   | Dropout, weight decay, and early stopping as regularization           | 3m 21s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdropout.gif)   |
 | `microgrpo.py`      | Group Relative Policy Optimization (DeepSeek's RLHF simplification)   | 0m 23s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microgrpo.gif)      |
@@ -21,6 +22,8 @@ Time and Status are historical values recorded when each script was added (Apple
 | `microsft.py`       | Supervised fine-tuning: pretrain a tiny decoder, then train the same weights on response-masked demonstrations | 1m 08s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microsft.gif) |
 
 The `microsft.py` row was measured during M6 on Apple M1 Pro with CPython 3.12.8: both default runs took about 68 seconds and printed byte-identical output. Its Pass means the program's frozen training-side checks passed; it does not certify generalization, and the held-out prompts are reported only.
+
+The `microdistill.py` row was measured during M6 on Apple M1 Pro with CPython 3.12.8: both default runs took about 2 seconds and printed byte-identical output. Its Pass means the program's frozen training-side checks passed; it is not evidence of paper-scale results or of generalization.
 
 ### Hybrid Autograd Scripts
 
@@ -36,7 +39,6 @@ See `docs/autograd-interface.md` for the canonical interface and `docs/implement
 | Algorithm                    | What It Would Teach                       | Notes                                   |
 | ---------------------------- | ----------------------------------------- | --------------------------------------- |
 | **Learning Rate Scheduling** | Warmup, cosine decay, step decay          | How schedule choice affects convergence |
-| **Knowledge Distillation**   | Training small models to mimic large ones | Compression via soft targets            |
 
 ## Learning Path
 
@@ -52,5 +54,6 @@ microreinforce.py   → How policy gradients turn rewards into learning signals
 microdpo.py         → How preference alignment works (without reward model)
 microppo.py         → How RLHF works (the full reward → policy loop)
 microgrpo.py        → How DeepSeek simplified RLHF with group-relative rewards
+microdistill.py     → How a small student learns from a frozen teacher's soft targets
 micromoe.py         → How sparse routing scales model capacity
 ```

@@ -53,6 +53,7 @@ DISPLAY_OVERRIDES: dict[str, str] = {
     "microppo": "PPO (RLHF)",
     "micromoe": "Mixture of Experts",
     "microbatchnorm": "Batch Normalization",
+    "microdistill": "Knowledge Distillation",
     "microdropout": "Dropout",
     "microgrpo": "GRPO",
     "microqlora": "QLoRA",
@@ -102,6 +103,7 @@ SCRIPT_TO_PAPER: dict[str, str] = {
     "microconv": "lenet-5",
     "microdiffusion": "ddpm",
     "microdiscretize": "mamba-2",
+    "microdistill": "distillation",
     "microdpo": "dpo",
     "microdropout": "dropout",
     "microembedding": "word2vec",
@@ -243,6 +245,16 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "Compares Euler, zero-order-hold and trapezoidal discretization. The source cites "
         "Mamba-3 (arXiv:2603.15569) Section 3 and S4 (Gu et al., 2022); the linked "
         "Mamba-2 card's structured state space duality is not implemented.",
+    ),
+    "microdistill": TeachingContract(
+        "train_infer",
+        "in_script",
+        "Sequential pipeline, not a comparison: trains a 99-parameter ReLU MLP teacher on "
+        "240 synthetic 2-D points from three Gaussian clusters, freezes it, then trains a "
+        "27-parameter student on its temperature-2 soft targets mixed with hard labels "
+        "(alpha 0.9, T^2-scaled KL term). The paper's MNIST, speech and ensemble "
+        "experiments are not reproduced, and T and alpha are toy choices. No hard-label-only "
+        "student is trained, so no causal benefit of distillation is measured.",
     ),
     "microdpo": TeachingContract("train_infer", "names_download"),
     "microdropout": TeachingContract("comparison", "names_download"),

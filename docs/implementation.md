@@ -32,7 +32,8 @@ no-magic/
 │   ├── microdpo.py
 │   ├── microppo.py
 │   ├── micromoe.py
-│   └── microsft.py
+│   ├── microsft.py
+│   └── microdistill.py
 └── 03-systems/
     ├── README.md               # Algorithm list + roadmap
     ├── microattention.py
@@ -671,6 +672,53 @@ This prevents readers from skipping the autograd section and missing per-script 
 
 ---
 
+### `microdistill.py` — Knowledge Distillation
+
+> _"How a small model learns from a large one: match the teacher's softened probabilities, not just its answers."_
+
+**What it teaches:**
+
+- Soft targets (Hinton, Vinyals & Dean, 2015, §2 Eq. 1): `softmax(z/T)` exposes how the teacher ranks the wrong classes
+- The mixed objective: a T²-scaled soft-target term plus a small hard-label term (§2.1)
+- The student-logit gradient `α T (q_T − p_T) + (1 − α)(q_1 − onehot(y))` (§2.1 Eq. 2), with batch-mean reduction 1/B
+- A trained teacher that stays frozen while a genuinely smaller student learns
+- Inference at temperature 1 for both models
+
+**Algorithm outline:**
+
+```text
+1. Draw 240 training (80/class) and 96 held-out (32/class) points from three 2-D Gaussians,
+   centers (-1,0), (1,0), (0,1.25), std 0.35, seed 42, before any model is initialized
+2. Teacher: ReLU MLP 2 -> 16 -> 3 with biases (99 parameters), 400 full-batch SGD
+   epochs (lr 0.1) on mean hard-label cross-entropy, manual backprop
+3. Freeze the teacher (weight digest recorded); compute p_T = softmax(v / 2) once
+4. Student: ReLU MLP 2 -> 4 -> 3 with biases (27 parameters), 400 full-batch SGD epochs
+   (lr 0.1) on mean [0.9 * 4 * KL(p_T || q_T) + 0.1 * CE(y, q_1)]
+5. Evaluate both at T = 1: training accuracy, agreement, KL; held-out report-only
+6. Check the frozen training-side criteria; exit non-zero on any failure
+```
+
+**Dataset:** Generated inline; labels are the generating cluster, never teacher predictions. The held-out partition is never used for tuning or stopping.
+
+**Key implementation details:**
+
+- `log_softmax` divides by T, subtracts the max and rejects non-positive or non-finite T; soft targets are checked to be normalized distributions
+- KL(p_T || q_T) differs from the paper's soft-target cross-entropy by the teacher's entropy, which is constant in the student, so the gradients agree
+- The teacher's soft targets come from the actually trained, frozen teacher; its SHA-256 weight digest must be unchanged after student training
+- No hard-label-only baseline student is trained: teacher and student differ in capacity, so the program reports behavior and makes no causal claim about distillation
+
+**Success criteria (frozen before the first run; training data only):**
+
+- Teacher mean training cross-entropy decreases by at least 5% from initialization, and teacher training accuracy reaches at least 80%
+- Student mean mixed objective and mean soft-target KL each decrease by at least 5% from initialization against the same frozen teacher
+- Student weights change; teacher weights stay byte-identical through transfer
+- Held-out accuracy and agreement are reported only; no student superiority, perfect fidelity or held-out improvement is required or claimed
+- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The default took about 2 seconds on Apple M1 Pro with CPython 3.12.8; legacy Intel was not measured
+
+**Expected complexity:** ~400-450 lines. Two plain-float MLPs with manual gradients; no autograd engine is needed.
+
+---
+
 ## 03 — Systems & Inference
 
 ### `microattention.py` — Attention Variants Compendium
@@ -987,7 +1035,7 @@ Scripts were built in this order to manage dependencies and validate the shared 
 | **Phase 5** | `microdpo.py`, `microppo.py`                                         | Requires stable autograd pattern from Phase 2. microppo uses hybrid autograd (policy: Value class, reward/value: plain floats).                                                            |
 | **Phase 6** | `microquant.py`, `microturboquant.py`, `microkv.py`, `microflash.py` | Systems scripts, fully independent of other phases. `microturboquant` is pure forward math (no autograd, no training); all matrix operations are hand-rolled pure-Python loops at D=32.                             |
 | **Phase 7** | `microbeam.py`, `micromoe.py`                                        | microbeam trains two models inline (depends on Phase 2 patterns). micromoe uses hybrid autograd (router: Value class, experts: plain floats).                                              |
-| **Phase 8** | `microsft.py`                                                        | Pretrains and then supervised-fine-tunes the same microgpt-style decoder; requires the stable autograd pattern from Phase 2. Precedes the preference stages of Phase 5 in the InstructGPT order. |
+| **Phase 8** | `microsft.py`, `microdistill.py`                                     | microsft pretrains and then supervised-fine-tunes the same microgpt-style decoder (Phase 2 autograd pattern) and precedes the preference stages of Phase 5 in the InstructGPT order. microdistill was implemented after it as a separate child change; it uses plain-float MLPs with manual gradients and imports nothing from microsft. |
 
 ### Dependency Notes
 
