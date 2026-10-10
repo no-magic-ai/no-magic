@@ -4,7 +4,7 @@ Methods for steering, fine-tuning, and aligning models after pretraining. These 
 
 ## Scripts
 
-Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 10 programs in this tier: 9 `micro*` programs and the unprefixed comparison `adam_vs_sgd.py`.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 11 programs in this tier: 10 `micro*` programs and the unprefixed comparison `adam_vs_sgd.py`.
 
 | Script              | Algorithm                                                             | Time   | Status | Video                                             |
 | ------------------- | --------------------------------------------------------------------- | ------ | ------ | ------------------------------------------------- |
@@ -18,6 +18,9 @@ Time and Status are historical values recorded when each script was added (Apple
 | `microppo.py`       | Proximal Policy Optimization for RLHF (hybrid autograd)               | 0m 34s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microppo.gif)       |
 | `microqlora.py`     | QLoRA — fine-tuning 4-bit quantized models with LoRA adapters         | 2m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microqlora.gif)     |
 | `microreinforce.py` | REINFORCE — vanilla policy gradient with baseline                     | 5m 39s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microreinforce.gif) |
+| `microsft.py`       | Supervised fine-tuning: pretrain a tiny decoder, then train the same weights on response-masked demonstrations | 1m 08s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microsft.gif) |
+
+The `microsft.py` row was measured during M6 on Apple M1 Pro with CPython 3.12.8: both default runs took about 68 seconds and printed byte-identical output. Its Pass means the program's frozen training-side checks passed; it does not certify generalization, and the held-out prompts are reported only.
 
 ### Hybrid Autograd Scripts
 
@@ -44,6 +47,7 @@ microbatchnorm.py   → How normalizing activations stabilizes training
 microdropout.py     → How regularization prevents overfitting
 microlora.py        → How fine-tuning works efficiently (1% of parameters)
 microqlora.py       → How quantization combines with LoRA for memory efficiency
+microsft.py         → How supervised fine-tuning turns a base model into a command follower
 microreinforce.py   → How policy gradients turn rewards into learning signals
 microdpo.py         → How preference alignment works (without reward model)
 microppo.py         → How RLHF works (the full reward → policy loop)

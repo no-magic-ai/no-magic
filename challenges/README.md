@@ -25,6 +25,7 @@ Each challenge presents a code snippet or scenario drawn directly from one of th
 | [react.md](react.md)           | `04-agents/microreact.py`          | Action masking, reward shaping, EMA baseline, TAO loop budget              |
 | [rnn.md](rnn.md)               | `01-foundations/micrornn.py`       | Vanishing gradients, GRU update gate, gradient norm ratio                  |
 | [roofline.md](roofline.md)     | `03-systems/microroofline.py`      | Arithmetic intensity, MIMO rank utilization, FLOPs vs wall-clock time      |
+| [sft.md](sft.md)               | `02-alignment/microsft.py`         | Response mask and causal shift, prompt-conditioning gradient, untrained prompt embeddings, batch-mean scaling under Adam |
 | [ssm.md](ssm.md)               | `03-systems/microssm.py`           | Fixed state vs KV cache, delta bias, selective B/C, Euler discretization   |
 | [tokenizer.md](tokenizer.md)   | `01-foundations/microtokenizer.py` | Merge order, priority replay, vocab size, corpus collapse                  |
 | [turboquant.md](turboquant.md) | `03-systems/microturboquant.py`    | Rotation-hurts-on-sparse, Haar uniformity, QJL sign-bit bias, orthogonality threshold |

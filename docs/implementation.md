@@ -31,7 +31,8 @@ no-magic/
 │   ├── microlora.py
 │   ├── microdpo.py
 │   ├── microppo.py
-│   └── micromoe.py
+│   ├── micromoe.py
+│   └── microsft.py
 └── 03-systems/
     ├── README.md               # Algorithm list + roadmap
     ├── microattention.py
@@ -615,6 +616,61 @@ This prevents readers from skipping the autograd section and missing per-script 
 
 ---
 
+### `microsft.py` — Supervised Fine-Tuning
+
+> _"How a pretrained next-token predictor becomes a command follower: the same weights, new demonstrations, a loss on the answer only."_
+
+**What it teaches:**
+
+- SFT as the first stage of the InstructGPT pipeline (Ouyang et al., 2022, §3.1 step 1 and §3.5): start from a pretrained model, fine-tune it on demonstrations, before any reward model or PPO
+- Pretraining likelihood versus conditional demonstration likelihood on the same decoder
+- Causal target shift and a response-only loss mask; prompt tokens still condition the answer and still receive gradient
+- Full-parameter adaptation from a learned base, with optimizer moments (not weights) reset at the stage boundary
+- Measured forgetting: base-corpus loss before and after SFT, reported only
+
+**Algorithm outline:**
+
+```text
+1. Build a bias-free 1-layer, 1-head decoder: d=8, feed-forward 32, context 10,
+   17 tokens (abcdefghnoptxy:> plus one shared start/end boundary), 1,120 parameters,
+   parameter-free RMSNorm (eps 1e-5), Gaussian init std 0.08
+2. Pretrain: 200 Adam updates (lr 0.01 constant, betas 0.85/0.99, eps 1e-8), each on ONE
+   uniformly sampled cyclic base string, next-token NLL over all 9 targets
+3. Snapshot the learned base; reset Adam moments; keep the weights
+4. SFT: 300 Adam updates, each on the mean response-only NLL over ALL 14 training pairs:
+   L = (1/14) * sum_i (1/2) * [NLL(target 8) + NLL(target 9)]  (= mean over 28 targets)
+   One forward pass and attention cache per pair; gradients accumulate, then one update
+5. Greedy temperature-1 decoding from model logits on training and held-out prompts
+6. Check the frozen training-side criteria; exit non-zero on any failure
+```
+
+**Dataset:** Generated inline. Eight length-8 cyclic strings over `abcdefgh` (`abcdefgh`, `bcdefgha`, ...), each framed by boundaries, for pretraining; they exercise input positions 0–8, never 9. Demonstrations `copy:<s>> → <s>` and `next:<s>> → successor(<s>)` over the cycle (`next:h> → a`). The 14 pairs for `a`–`g` train; `copy:h>` and `next:h>` are held out and never used for selection, stopping or tuning. The embedding rows of `n o p t x y : >` receive no pretraining gradient: they are learned during SFT, not transferred.
+
+**Key implementation details:**
+
+- `mean_target_nll` supervises targets `t >= first_target` from decoder position `t-1`; pretraining uses `first_target=1`, SFT uses the prompt length 8, so each pair has exactly 2 supervised targets (response character and end boundary)
+- `accumulate_batch_gradient` runs backward on `(1/14) * L_i` for every pair, so accumulated `param.grad` equals the gradient of the batch mean; no pair attends to another
+- `log_softmax` subtracts the max logit, so log-probabilities stay finite with no probability clamp
+- `ValueError` on an empty supervised set or a sequence longer than the context
+- Inference never calls `demonstration_response`; answers come from argmax of the trained logits
+
+**Success criteria (frozen before the first run; training data only):**
+
+- Mean base-corpus NLL decreases by at least 5% from initialization after pretraining
+- Mean training response NLL decreases by at least 5% after SFT relative to the same learned base
+- Parameters change in both stages
+- At least 4 of 7 exact greedy training responses, end boundary included, for `copy` and separately for `next`
+- Held-out loss and responses are reported only; no held-out improvement or general instruction following is claimed
+- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The full-batch default took about 68 seconds on Apple M1 Pro with CPython 3.12.8; legacy Intel was not measured
+
+**Observed limitations (reported, not thresholds or claims):** In the measured default run both held-out prompts, `copy:h>` and `next:h>`, decode to `e` instead of the demonstrated `h` and `a`, and the held-out response NLL rises from 1.8145 before SFT to 14.3221 after it. The base-corpus NLL falls from 2.8785 at initialization to 0.2667 after pretraining and rises to 6.8535 after SFT, so fine-tuning overwrites much of the pretrained plain-text behavior.
+
+**Post-hoc amendment (disclosed):** The first implementation used one uniformly sampled pair per SFT update. Its developer default run (seed 42, CPython 3.13.14) failed the `next` criterion at 3/7 (copy 4/7), although both loss criteria passed. Static review found no defect that explains the failure, and sampled finite differences matched autograd. That check covered 27 coordinates on one masked example (four of them trivial zero controls); it is not a full correctness proof and it did not cover pretraining or the batch reduction. The full-batch regime was chosen after that failure. The comparison behind the choice used training prompts only, ran seeds 0–15 from the same learned base per seed, and passed 14/16 seeds with full batching against 4/16 with single-pair updates; two full-batch seeds still fail. The seed-42 full-batch diagnostic (copy 6/7, next 5/7) was seen before the choice. This is an engineering amendment, not a blind pre-registered test. It establishes no generalization benefit, no necessity of batching and no isolated gradient-noise cause. Full batching also changes Adam's moment normalization and raises SFT sequence-gradient exposure from 300 to 4,200 (14x); pretraining is unchanged. All of those runs are unqualified diagnostics.
+
+**Expected complexity:** ~550-650 lines including the autograd engine, both training stages, masking/batch helpers and the acceptance report.
+
+---
+
 ## 03 — Systems & Inference
 
 ### `microattention.py` — Attention Variants Compendium
@@ -931,6 +987,7 @@ Scripts were built in this order to manage dependencies and validate the shared 
 | **Phase 5** | `microdpo.py`, `microppo.py`                                         | Requires stable autograd pattern from Phase 2. microppo uses hybrid autograd (policy: Value class, reward/value: plain floats).                                                            |
 | **Phase 6** | `microquant.py`, `microturboquant.py`, `microkv.py`, `microflash.py` | Systems scripts, fully independent of other phases. `microturboquant` is pure forward math (no autograd, no training); all matrix operations are hand-rolled pure-Python loops at D=32.                             |
 | **Phase 7** | `microbeam.py`, `micromoe.py`                                        | microbeam trains two models inline (depends on Phase 2 patterns). micromoe uses hybrid autograd (router: Value class, experts: plain floats).                                              |
+| **Phase 8** | `microsft.py`                                                        | Pretrains and then supervised-fine-tunes the same microgpt-style decoder; requires the stable autograd pattern from Phase 2. Precedes the preference stages of Phase 5 in the InstructGPT order. |
 
 ### Dependency Notes
 
