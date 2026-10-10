@@ -41,7 +41,8 @@ no-magic/
     ├── microkv.py
     ├── microquant.py
     ├── microflash.py
-    └── microbeam.py
+    ├── microbeam.py
+    └── microwatermark.py
 ```
 
 ## Design Constraints (Enforced Across All Scripts)
@@ -1080,6 +1081,63 @@ For each attention variant:
 
 ---
 
+### `microwatermark.py` — Green-List Watermarking
+
+> _"A secret key and the previous token tilt a trained model's sampling toward a pseudorandom green list, and a z-test that sees only the tokens and the key can tell — except where the text leaves it no room."_
+
+**What it teaches:**
+
+- The keyed green list of Kirchenbauer et al. (2023, Alg. 2): a keyed hash of the previous token seeds a generator that picks γ|V| green tokens, so the list changes at every step and only the key holder can rebuild it
+- The soft rule `p̂_i ∝ exp(l_i + δ·1[i ∈ G])` and the hard rule (Alg. 1, sample only from G) as a comparison arm, both applied to one trained model at sampling time
+- The detector's one-proportion z-test `z = (|s|_G − γT) / √(Tγ(1 − γ))` (Eq. 3; Eq. 2 at γ = 1/2), which needs the tokens, the key and γ but no model, prompt, logits or δ
+- Why repeated (previous, token) pairs break the test's independence assumption, and the paper's Sec. 4.1 remedy of counting each pair once (DEDUP, the headline detector; PLAIN is shown as uncalibrated on this text)
+- The low-entropy limit: P(green) = αg / (αg + 1 − g) with α = e^δ barely moves when one token holds the mass (Sec. 1.2, Sec. 4, Theorem 4.2 checked loosely)
+- Honest controls: 200 null keys on unwatermarked, grammar, wrong-key and repetitive text; token shuffles; sharpened sampling; random substitution (not an adversary)
+
+**Algorithm outline:**
+
+```text
+1. Generate 600 training and 150 held-out sentences from a 48-word grammar (one seeded stream),
+   including a near-deterministic opener "once upon a time ," that plants low-entropy steps
+2. Train a 2-token-context MLP (embedding 8, hidden 24 tanh, 1,992 parameters) with
+   hand-derived gradients and Adam (lr 0.02, batch 32, 1,200 steps); check 12 partial
+   derivatives by central differences first
+3. Check Eq. 2 / Eq. 3 arithmetic, the paper's worked numbers, edge cases (empty and one-token
+   text, invalid gamma, zero eligible mass), green-list properties and an i.i.d. null over
+   200 keys; check Theorem 4.2's per-step bound by stratified Monte Carlo
+4. Sample 11 arms x 200 texts x 200 tokens (8 prompts x 25 seeds, shared random streams):
+   unwatermarked, soft gamma/delta sweep (primary gamma 0.25, delta 2.0), hard rule at gamma
+   0.5, sharpened t = 0.3 with the bias added after (default) or before temperature
+5. Score right-key texts and four null controls (200 texts x 200 null keys) with PLAIN and
+   DEDUP at 16/32/64/128/200 generated tokens; first generated token unscored (T = n - 1)
+6. Print 30 frozen pass/fail gates plus report-only distributions, intervals, matched-FPR
+   tables, sweeps, per-prompt/per-key tables, examples and substitution rows; raise
+   RuntimeError if any gate fails
+```
+
+**Dataset:** Generated inline from the grammar; nothing is downloaded. Every purpose (data, initialization, gradient check, training batches, constructed text, i.i.d. null, Monte Carlo, each (prompt, seed) sample, grammar controls, shuffles, substitutions) uses its own seeded `random.Random` stream.
+
+**Key implementation details:**
+
+- Green lists: `blake2b(previous.to_bytes(4, "big"), key=K, digest_size=8)` read big-endian seeds `random.Random`, which samples `round(γ·48)` tokens; `hmac` is outside the import allowlist. Keys are public demo constants, not secrets; the hash window is h = 1
+- `γ_effective = round(γ|V|)/|V|` is what the z-test uses; the batched prefix-sum scorer must equal the reference detector exactly (gate E9)
+- The bias is added after dividing logits by the temperature. Alg. 2 has no temperature and does not fix the order, while the paper's multinomial experiments sample at temperature 0.7 (App. C); the order in the authors' released code was not verified. The other order (effective bias δ/t) is a report-only arm, and the sharpened-sampling gate W10 holds only for this default
+- Quality is per-token NLL / perplexity of generated text under the same unmodified toy model, not a larger oracle model
+- The gates are the final set of a post-observation design. After a first probe of the same seeded data, they were redesigned and hashed before the revised (v2) probe ran. A dated amendment (2026-10-10), written after v2 was observed, retired the two Theorem 4.2 design checks that failed there — W8b, the resolution check, and W8c, the inflated-bound control (infeasible: 4 near-deterministic contexts against 10 required) — whose numbers are printed report-only and not re-scored; it also narrowed W12 to DEDUP only (its PLAIN half had passed at 0.0030 and is now printed report-only), split W2 into W2p/W2d and made W10 explicitly conditional on bias-after-temperature. No other threshold or statistic changed
+
+**Success criteria (fixed by the dated post-observation amendment before this program was written):**
+
+- Training: held-out NLL ≤ 0.60 ln 48, held-out/train ≤ 1.10, gradient error ≤ 1e-4, parameters moved
+- Arithmetic and edge cases: Eq. 3 closed form, Eq. 2 = Eq. 3 at γ = 1/2, the paper's 16-token and 1,000-token numbers, no statistic for fewer than two tokens, invalid γ and zero eligible mass raise, green-list size/determinism/key and context dependence, dedup edge cases, batched scorer exact
+- Calibration: i.i.d. null tail rates near 5% and 1%; DEDUP over 200 null keys on model, grammar and wrong-key text flags at most 0.1% with spread 0.6–1.1 and mean within 0.1; PLAIN's spread must visibly exceed DEDUP's on repetitive text
+- Power and mechanism: right-key rate at 200 tokens ≥ 0.90 for both detectors with median z rising in length; a real but bounded perplexity cost (ratio ≤ 2); per entropy bucket, the observed green counts are statistically compatible with Alg. 2's exact green probability (martingale |z| ≤ 4; compatibility, not confirmation by samples); high-entropy steps carry ≥ 0.15 more green than low-entropy steps; the hard rule detects faster at higher cost; sharpening lowers DEDUP detection by ≥ 0.30; token-shuffled text is flagged by DEDUP at most 1% of the time; and no Monte Carlo-detectable violation of Theorem 4.2's per-step bound (estimate + 3 s.e. ≥ bound − 1e-9) in ≥ 99% of reachable contexts, a non-tight check that cannot confirm the bound is tight
+- No claim of perfect detection, adversarial robustness, security, real-text or paper-scale results; no p-value claim for the plain test
+- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The default took about 17 seconds on Apple M1 Pro with CPython 3.12.8 (program-reported totals of 17.1 s and 17.5 s in the two independent default runs, on a loaded machine); legacy Intel was not measured
+
+**Expected complexity:** ~1,600 lines including the comment and docstring commentary. Pure-Python lists and a hand-written backward pass; no autograd engine.
+
+---
+
 ## Implementation Priority & Sequencing
 
 Scripts were built in this order to manage dependencies and validate the shared autograd/model patterns. The canonical autograd interface (`docs/autograd-interface.md`) was finalized before Phase 2.
@@ -1095,6 +1153,7 @@ Scripts were built in this order to manage dependencies and validate the shared 
 | **Phase 7** | `microbeam.py`, `micromoe.py`                                        | microbeam trains two models inline (depends on Phase 2 patterns). micromoe uses hybrid autograd (router: Value class, experts: plain floats).                                              |
 | **Phase 8** | `microsft.py`, `microdistill.py`                                     | microsft pretrains and then supervised-fine-tunes the same microgpt-style decoder (Phase 2 autograd pattern) and precedes the preference stages of Phase 5 in the InstructGPT order. microdistill was implemented after it as a separate child change; it uses plain-float MLPs with manual gradients and imports nothing from microsft. |
 | **Phase 9** | `microrome.py`                                                       | Trains its own small decoder with manual gradients, then edits it in closed form; it needs the decoder concepts of microgpt and imports nothing from other scripts. |
+| **Phase 10** | `microwatermark.py`                                                 | Trains its own small word-level model with manual gradients, then samples it with and without a keyed logit bias and detects the bias with a model-free z-test; it needs only softmax sampling (microbeam) and imports nothing from other scripts. |
 
 ### Dependency Notes
 

@@ -76,6 +76,7 @@ DISPLAY_OVERRIDES: dict[str, str] = {
     "microsft": "Supervised Fine-Tuning (SFT)",
     "microspeculative": "Speculative Decoding",
     "microvectorsearch": "Vector Search",
+    "microwatermark": "Green-List Watermarking",
     "microbandit": "Multi-Armed Bandit",
     "micromcts": "Monte Carlo Tree Search",
     "micromemory": "Memory-Augmented Network",
@@ -141,6 +142,7 @@ SCRIPT_TO_PAPER: dict[str, str] = {
     "microvae": "vae",
     "microvectorsearch": "hnsw",
     "microvit": "vit",
+    "microwatermark": "green-list-watermark",
     "rnn_vs_gru_vs_lstm": "gru",
 }
 
@@ -420,6 +422,20 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "not implement the HNSW graph index of the linked card.",
     ),
     "microvit": TeachingContract("train_infer", "in_script"),
+    "microwatermark": TeachingContract(
+        "train_infer",
+        "in_script",
+        "Trains a 1,992-parameter 2-token-context MLP on a 48-word synthetic grammar, then "
+        "generates with the paper's keyed soft green-list bias (gamma 0.25, delta 2.0; hard "
+        "rule at gamma 0.5 as a comparison) and detects with Eq. 3 from the tokens and key "
+        "alone. The unwatermarked, sharpened and hard-rule arms are alternative decoders of "
+        "the same trained model, not trained arms. Toy adaptations: green lists from a keyed "
+        "blake2b of the previous token (h = 1) seeding random.Random; the first generated "
+        "token is not scored; the bias is added after temperature scaling; DEDUP (repeated "
+        "pairs counted once) is the headline detector and the plain Eq. 3 test is shown as "
+        "uncalibrated on this repetitive text. No OPT/C4 or paper-scale result, and no "
+        "robustness or security claim.",
+    ),
     "rnn_vs_gru_vs_lstm": TeachingContract(
         "comparison",
         "names_download",
