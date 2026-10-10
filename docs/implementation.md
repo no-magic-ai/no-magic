@@ -1187,7 +1187,7 @@ For each attention variant:
 - G5 aggregator checks and the binomial identity pass; ties and abstentions on the real model are printed
 - G6 two default runs print identical output apart from lines labeled `[timing]`; G7 the default takes at most 360 s under CPython 3.12.8 on the M-series qualification host (product limit 420 s); G8 the frozen design-study numbers reproduce exactly. G6–G8 are checked outside the program
 - Report-only, never claimed: direct versus trace (+0.052, p = 0.083 at seed 42, unequal budgets), the margin over the best forced route (+0.068, chosen post hoc), faithfulness shares, per-class results; no emergence, faithful-reasoning, paper-scale or general-reasoning claim
-- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The shipped program has not yet been timed; its frozen design prototype took 316.14 s on Apple M1 Pro with CPython 3.12.8. Legacy Intel is not measured
+- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The two independent default runs took 303.3 s and 307.3 s on Apple M1 Pro with CPython 3.12.8 on a loaded machine, within the 360 s gate (G7); the frozen design prototype took 316.14 s. A GitHub-hosted Ubuntu x64 CI run printed 509.8 s, which is neither target platform. Legacy Intel is not measured
 
 **Expected complexity:** ~1,100 non-empty lines including the comment and docstring commentary (the frozen 792-line probe plus the commenting standard and the embedded split). Pure-Python lists and a hand-written backward pass; no autograd engine.
 
