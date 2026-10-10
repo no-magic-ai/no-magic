@@ -1,6 +1,6 @@
 # MicroCoT Challenges
 
-Test your understanding of reasoning traces and self-consistency by predicting what happens in these scenarios. Try to work out the answer before revealing it. Numbers quoted in the answers are the pre-registered seed-42 values that the default run of `03-systems/microcot.py` must reproduce exactly under CPython 3.12.8 (the program prints every one of them). They describe this toy digit task and tiny model only; none of them is a claim about large language models or natural-language reasoning.
+Test your understanding of reasoning traces and self-consistency by predicting what happens in these scenarios. Try to work out the answer before revealing it. Numbers quoted in the answers are the pre-registered seed-42 values that the default run of `03-systems/microcot.py` must reproduce exactly under CPython 3.12.8 on the Apple M1 Pro qualification host (the program prints every one of them); other platforms may differ slightly. They describe this toy digit task and tiny model only; none of them is a claim about large language models or natural-language reasoning.
 
 ---
 

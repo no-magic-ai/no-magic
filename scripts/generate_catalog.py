@@ -253,12 +253,13 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "(L/R/T), so route diversity is built into the training data rather than sampled "
         "from a pretrained model; Wei et al.'s few-shot prompting is not implemented. The "
         "trace arm is decoded greedily and by self-consistency (40 samples at temperature "
-        "0.7, answer parsed after '#', majority vote with an Eq. 1 tie rule). At seed 42 the "
-        "vote beats greedy by +0.104, partly by undoing greedy's poor route choice; over the "
-        "best single forced route, chosen post hoc, the margin is +0.068. Trace versus direct "
-        "(+0.052, p = 0.083, unequal budgets) is not claimed, and the held-out slice leans "
-        "toward repeated digits. Toy scale: no emergence, faithful-reasoning, paper-scale or "
-        "general-reasoning claim.",
+        "0.7, answer parsed after '#', majority vote with an Eq. 1 tie rule). On the pinned "
+        "seed-42 CPython 3.12.8 Apple M1 Pro run the vote beats greedy by +0.104, partly by "
+        "undoing greedy's poor route choice; over the best single forced route, chosen post "
+        "hoc, the margin is +0.068. Trace versus direct on that run (+0.052, p = 0.083, "
+        "unequal budgets; the direct arm differed slightly in one Ubuntu CI run) is not "
+        "claimed, and the held-out slice leans toward repeated digits. Toy scale: no "
+        "emergence, faithful-reasoning, paper-scale or general-reasoning claim.",
     ),
     "microdiffusion": TeachingContract("train_infer", "in_script"),
     "microdiscretize": TeachingContract(

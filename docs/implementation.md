@@ -1175,7 +1175,7 @@ For each attention variant:
 - Gold-route functions build training targets, forced probe inputs and scores only; every decoder receives only prompt tokens and weights, so traces are model-written and no vote is taken over predefined answers
 - Four separate random streams (initialization 42, shuffle 43 per arm, greedy/inspection 44, sampling 45); the 12 printed inspection samples never touch the sampling stream, and the τ = 0.7 votes depend on the 0.3 and 0.5 sweeps having consumed the stream first
 - Eq. 1 weights use temperature-1 log-probabilities even for hotter samples; there is no top-k cut (vacuous at 17 tokens); greedy breaks logit ties toward the lowest token id
-- The default is pre-registered and frozen: the program must reproduce the design study's seed-42 numbers exactly under CPython 3.12.8 (D9); every floating-point sum keeps its order, and no environment variable, argument or smoke mode changes it
+- The default is pre-registered and frozen: the program must reproduce the design study's seed-42 numbers exactly under CPython 3.12.8 on the Apple M1 Pro qualification host (D9); every floating-point sum keeps its order, and no environment variable, argument or smoke mode changes it. A GitHub Ubuntu x64 CI run (CPython 3.12.15) differed slightly in the direct arm only; the cause is not established, and no exact reproduction is claimed elsewhere
 - The source lists thirteen disclosures (D1–D13), including constructed route diversity, the post hoc best-route margin, unequal budgets, partial faithfulness and the earlier single-route DESIGN NO-GO
 
 **Success criteria (pre-registered before any code of this design; checked on the seed-42 default):**
@@ -1186,7 +1186,7 @@ For each attention variant:
 - G4 majority vote at k = 40, τ = 0.7 beats greedy by ≥ +0.05 with exact two-sided McNemar p < 0.01, and the k = 10 vote is not below greedy
 - G5 aggregator checks and the binomial identity pass; ties and abstentions on the real model are printed
 - G6 two default runs print identical output apart from lines labeled `[timing]`; G7 the default takes at most 360 s under CPython 3.12.8 on the M-series qualification host (product limit 420 s); G8 the frozen design-study numbers reproduce exactly. G6–G8 are checked outside the program
-- Report-only, never claimed: direct versus trace (+0.052, p = 0.083 at seed 42, unequal budgets), the margin over the best forced route (+0.068, chosen post hoc), faithfulness shares, per-class results; no emergence, faithful-reasoning, paper-scale or general-reasoning claim
+- Report-only, never claimed: direct versus trace (+0.052, p = 0.083 on the pinned seed-42 CPython 3.12.8 Apple M1 Pro run; +0.050, p = 0.095 in that Ubuntu CI run; unequal budgets), the margin over the best forced route (+0.068, chosen post hoc), faithfulness shares, per-class results; no emergence, faithful-reasoning, paper-scale or general-reasoning claim
 - Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The two independent default runs took 303.3 s and 307.3 s on Apple M1 Pro with CPython 3.12.8 on a loaded machine, within the 360 s gate (G7); the frozen design prototype took 316.14 s. A GitHub-hosted Ubuntu x64 CI run printed 509.8 s, which is neither target platform. Legacy Intel is not measured
 
 **Expected complexity:** ~1,100 non-empty lines including the comment and docstring commentary (the frozen 792-line probe plus the commenting standard and the embedded split). Pure-Python lists and a hand-written backward pass; no autograd engine.
