@@ -58,6 +58,7 @@ DISPLAY_OVERRIDES: dict[str, str] = {
     "microgrpo": "GRPO",
     "microqlora": "QLoRA",
     "microreinforce": "REINFORCE",
+    "microrome": "ROME Knowledge Editing",
     "microattention": "Attention Variants",
     "microbeam": "Beam Search",
     "microflash": "Flash Attention",
@@ -129,6 +130,7 @@ SCRIPT_TO_PAPER: dict[str, str] = {
     "microreinforce": "reinforce",
     "microresnet": "resnet",
     "micrornn": "rnn-elman",
+    "microrome": "rome",
     "microroofline": "roofline",
     "microrope": "rope",
     "microsft": "instructgpt",
@@ -358,6 +360,19 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "Trains a vanilla RNN and a GRU side by side. The source cites Rumelhart et al. "
         "for the vanilla RNN and Cho et al. (2014) for the GRU; the linked card is "
         "Elman (1990).",
+    ),
+    "microrome": TeachingContract(
+        "train_infer",
+        "in_script",
+        "Trains a ~3.9k-parameter decoder with one MLP block and one attention readout on 24 "
+        "synthetic subject-city-category facts, then applies the paper's closed-form "
+        "rank-one update (Eq. 2-4) to the MLP output matrix and measures efficacy, "
+        "paraphrase, neighborhood and essence preservation. The C = I and wrong-token edits "
+        "are report-only closed-form controls on the same trained weights, not trained "
+        "arms, so this is not a comparison. Single-token subjects, no normalization, "
+        "answer-type-masked softmax and synthetic facts: not GPT-2 XL, not zsRE or "
+        "COUNTERFACT, and not paper-scale results; the causal trace and the wrong-token "
+        "control localize by construction of the architecture.",
     ),
     "microroofline": TeachingContract(
         "comparison",

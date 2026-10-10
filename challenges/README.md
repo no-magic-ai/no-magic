@@ -25,6 +25,7 @@ Each challenge presents a code snippet or scenario drawn directly from one of th
 | [quant.md](quant.md)           | `03-systems/microquant.py`         | Absmax outlier sensitivity, INT4 range, per-channel vs per-tensor          |
 | [react.md](react.md)           | `04-agents/microreact.py`          | Action masking, reward shaping, EMA baseline, TAO loop budget              |
 | [rnn.md](rnn.md)               | `01-foundations/micrornn.py`       | Vanishing gradients, GRU update gate, gradient norm ratio                  |
+| [rome.md](rome.md)             | `02-alignment/microrome.py`        | Dense but rank-one ΔW, C⁻¹ versus C = I locality, exact-at-k* partial transfer, architecture-imposed wrong-token control |
 | [roofline.md](roofline.md)     | `03-systems/microroofline.py`      | Arithmetic intensity, MIMO rank utilization, FLOPs vs wall-clock time      |
 | [sft.md](sft.md)               | `02-alignment/microsft.py`         | Response mask and causal shift, prompt-conditioning gradient, untrained prompt embeddings, batch-mean scaling under Adam |
 | [ssm.md](ssm.md)               | `03-systems/microssm.py`           | Fixed state vs KV cache, delta bias, selective B/C, Euler discretization   |

@@ -33,7 +33,8 @@ no-magic/
 │   ├── microppo.py
 │   ├── micromoe.py
 │   ├── microsft.py
-│   └── microdistill.py
+│   ├── microdistill.py
+│   └── microrome.py
 └── 03-systems/
     ├── README.md               # Algorithm list + roadmap
     ├── microattention.py
@@ -719,6 +720,63 @@ This prevents readers from skipping the autograd section and missing per-script 
 
 ---
 
+### `microrome.py` — ROME Knowledge Editing
+
+> _"A trained network stores a fact as a key-value pair in an MLP matrix; one closed-form rank-one update rewrites it and leaves its neighbors alone."_
+
+**What it teaches:**
+
+- The MLP output matrix as a linear associative memory `W K ≈ V` (Meng et al., 2022, §3.1)
+- The key `k*`: the post-nonlinearity MLP key at the subject token, averaged over N prefixes (Eq. 3)
+- The value `v*`: gradient descent on a free vector substituted for the MLP output at the subject token, through the frozen network, with an essence-drift KL term (Eq. 4)
+- The constrained least-squares update `Ŵ = W + Λ (C⁻¹k*)ᵀ`, `Λ = (v* − W k*) / ((C⁻¹k*)ᵀ k*)`, derived in comments from the App. A Lagrangian (Eq. 5-17), with `C = K Kᵀ` estimated from keys at every position
+- Edit evaluation: efficacy, paraphrase and neighborhood success (§3.2-3.4) plus locality, bleed and essence checks, against a C = I control
+- A compact causal trace (§2.1, noise 3× the embedding std per App. B.1), presented as confirming a route the architecture imposes
+
+**Algorithm outline:**
+
+```text
+1. Generate 24 invented subjects, 8 cities (3 subjects each) and 4 categories (6 each) with a
+   seeded shuffle; prompts are [0-3 fillers] + subject + template (T0-T3 ask for the city,
+   ESS for the category); the six edit subjects (index % 4 == 0) never train T3
+2. Model (3,936 parameters, d = 16, H = 64, no biases, no normalization):
+   h0 = E[x] + P[i]; k = ReLU(W_fc h0); m = W_proj k; h1 = h0 + m;
+   one attention head queried from the last position; logits = U (h1_T + attn),
+   softmax masked to the answer type; manual forward and backward passes
+3. Train all weights with Adam (lr 0.01 decaying linearly to 1%), batch 24, 1,500 steps
+4. C = (1/n) sum k k^T over the keys at every position of 1,500 sampled training prompts
+5. For each edit subject, new city = (old + 3) mod 8, on a fresh copy of W_proj:
+   k* = mean key over 20 prefixes; v* = argmin_z of Eq. 4 (lambda = 100, Adam lr 0.1,
+   L2 1.5e-3 on z in the gradient only, <= 60 steps, early stop 0.05, z0 = W_proj k*);
+   u = C^-1 k* by Gauss-Jordan with partial pivoting; W_hat = W + Lambda u^T
+6. Repeat step 5 with u = k* (C = I) and with key and value at the template token
+   (wrong-token control); both are report-only
+7. Evaluate on 20 evaluation prefixes from a separate stream; check the mechanism identities
+   and the frozen criteria; exit non-zero on any failure
+```
+
+**Dataset:** Generated inline from invented names, so no fact is a claim about the real world. Every purpose (facts, initialization, batches, covariance sample, edit contexts, evaluation, trace noise) draws from its own `random.Random(42 * 1000 + offset)` stream.
+
+**Key implementation details:**
+
+- `o*` is used only as the loss target of the search for `v*`; every prediction goes through the network's weights, and the edit changes no tensor other than `W_proj`
+- Runtime hard checks: rank(ΔW) = 1, `‖Ŵk* − v*‖∞ ≤ 1e-9 (1 + ‖v*‖∞)`, ΔW = Λuᵀ entrywise, `‖Cu − k*‖∞ ≤ 1e-8 (1 + ‖k*‖∞)`, every other tensor bit-identical to a pre-edit snapshot, C symmetric, Gauss-Jordan pivots ≥ 1e-12
+- The backward pass returns dL/dh1 at every position, which equals dL/dm at a patched position; that is the gradient the value search needs. Finite-difference checks of the hand-written gradients are not part of the program: they were run during the design study and are repeated outside the repository on the final source
+- With no attention before the MLP, a key depends only on (token, position): the trace's localization and the wrong-token control's paraphrase score of 0 follow from the architecture
+- Deviations from the paper and from the authors' released code (KL factor, δ parametrization, in-loss decay, norm clamp), seed sensitivity and the CPython 3.12 `sum()` note are listed in the source header
+
+**Success criteria (frozen before the program was written):**
+
+- Training: mean NLL over the last 50 batches ≤ 0.05 and 100% exact recall on the 912-prompt training grid
+- Mechanism: the runtime identities above hold for the ROME and C = I edits of all six subjects; C is symmetric with pivots ≥ 1e-12
+- Behavior of the ROME edits (mean over six): efficacy ≥ 0.95, paraphrase ≥ 0.80 with at least 80% of paraphrase prompts eligible, neighborhood ≥ 0.90, locality ≥ 0.95, essence ≥ 0.98
+- Controls and the causal trace are reported only; no paper-scale or zsRE/COUNTERFACT result is claimed, and efficacy is known to be seed-sensitive
+- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The default took about 65 seconds on Apple M1 Pro with CPython 3.12.8; legacy Intel was not measured
+
+**Expected complexity:** ~1,050-1,100 lines. Manual forward and backward passes on plain lists; no autograd engine is needed.
+
+---
+
 ## 03 — Systems & Inference
 
 ### `microattention.py` — Attention Variants Compendium
@@ -1036,6 +1094,7 @@ Scripts were built in this order to manage dependencies and validate the shared 
 | **Phase 6** | `microquant.py`, `microturboquant.py`, `microkv.py`, `microflash.py` | Systems scripts, fully independent of other phases. `microturboquant` is pure forward math (no autograd, no training); all matrix operations are hand-rolled pure-Python loops at D=32.                             |
 | **Phase 7** | `microbeam.py`, `micromoe.py`                                        | microbeam trains two models inline (depends on Phase 2 patterns). micromoe uses hybrid autograd (router: Value class, experts: plain floats).                                              |
 | **Phase 8** | `microsft.py`, `microdistill.py`                                     | microsft pretrains and then supervised-fine-tunes the same microgpt-style decoder (Phase 2 autograd pattern) and precedes the preference stages of Phase 5 in the InstructGPT order. microdistill was implemented after it as a separate child change; it uses plain-float MLPs with manual gradients and imports nothing from microsft. |
+| **Phase 9** | `microrome.py`                                                       | Trains its own small decoder with manual gradients, then edits it in closed form; it needs the decoder concepts of microgpt and imports nothing from other scripts. |
 
 ### Dependency Notes
 
