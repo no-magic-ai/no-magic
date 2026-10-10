@@ -1,6 +1,6 @@
 # Learning Path
 
-A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 37 of the 49 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 38 of the 50 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ## How to Use This Guide
 
@@ -16,11 +16,11 @@ A structured guide through the no-magic implementations. Pick a track based on y
 | Track | Focus | Time |
 |-------|-------|------|
 | 1. Weekend Sprint: Transformers | Tokenization through attention | ~4 hrs |
-| 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~3 hrs 35 min |
+| 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~4 hrs 10 min |
 | 3. Deep Dive: Modern Inference | Making models fast and small | ~7 hrs |
 | 4. Deep Dive: Generative Models | How models create new data | ~4 hrs |
 | 5. Deep Dive: Retrieval & Search | Connecting models to external knowledge | ~3 hrs |
-| 6. Full Curriculum | 37 of the 49 scripts, dependency-ordered | ~22 hrs |
+| 6. Full Curriculum | 38 of the 50 scripts, dependency-ordered | ~22 hrs |
 | 7. Agent Algorithms | Search and reasoning in autonomous agents | ~3 hrs |
 
 ---
@@ -125,9 +125,9 @@ From raw text to self-attention. This track builds the core transformer pipeline
 
 ## Track 2: Weekend Sprint — Alignment (~3 hrs)
 
-The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 3 hrs 35 min.
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 4 hrs 10 min.
 
-How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, supervised fine-tuning on demonstrations, preference optimization, and reinforcement learning from human feedback — the techniques that turn a base language model into a useful assistant. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people.
+How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, supervised fine-tuning on demonstrations, preference optimization, reinforcement learning from human feedback, and distillation into a smaller model — the techniques that turn a base language model into a useful assistant. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people. The last step, `microdistill.py`, shows the general teacher-to-student transfer mechanism on a small 2-D classifier, not on a language model.
 
 **Prerequisites:** Complete Track 1, or at minimum `01-foundations/microgpt.py` (the autograd `Value` class and transformer architecture are assumed knowledge).
 
@@ -220,6 +220,21 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
   The ratio is `exp(0) = 1` for every sample, because `old_logp` and the current log-probability come from the same weights; the script's two log-probability functions agreed to within 4 × 10⁻¹⁵ on sampled completions. A ratio of 1 is inside [0.8, 1.2], so the clip never binds here and the update is an advantage-weighted policy gradient plus the penalty. Clipping only matters when one batch is reused for several updates, which this script does not do.
   </details>
 - **Limits:** The preferences are synthetic, and the reward adds an explicit length bonus on top of the learned reward model. The printed `kl_div` is the mean absolute difference between policy and reference sequence log-probabilities, not a KL estimate. The reward model (an MLP) and the value function (a linear model) use plain floats and hand-written SGD, not autograd.
+- **Time:** 35 min
+- [ ] Completed
+
+**7. `02-alignment/microdistill.py`**
+- **Outcome:** You train a 99-parameter ReLU MLP teacher on three synthetic 2-D Gaussian clusters (240 points, 400 full-batch SGD epochs) and freeze it. You then train a 27-parameter student for 400 epochs on the teacher's temperature-2 class probabilities mixed with the true labels, and compare the student's objective, KL and agreement with the teacher before and after, with both models predicting at temperature 1.
+- **Why this step here:** The earlier steps change one model with demonstrations, preferences or rewards. Here a trained model's whole output distribution becomes the training signal for a different, smaller model, the usual way to make a fine-tuned model cheaper to serve. It needs only softmax, cross-entropy and backpropagation through a small MLP; the script writes the gradients by hand and uses no autograd engine.
+- **Run:** `python 02-alignment/microdistill.py`
+- **Data:** None to download; the clusters are generated in the script.
+- **Links:** [source](02-alignment/microdistill.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/distillation.md) · [primary paper](https://arxiv.org/abs/1503.02531) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdistill.gif)
+- **Predict before you run:** (1) What parameter counts will the program print for the 2 → 16 → 3 teacher and the 2 → 4 → 3 student, biases included? (2) After the student trains, will the line `Teacher weight digest unchanged through transfer` print `True`, and what in the code guarantees it?
+  <details><summary>Check your prediction</summary>
+
+  (1) Teacher 2×16 + 16 + 16×3 + 3 = 99; student 2×4 + 4 + 4×3 + 3 = 27. (2) `True`. The soft targets are computed once from the trained teacher before student training starts, and `sgd_step` is only ever called on the student during transfer, so no teacher weight is written. The digest hashes every weight's exact 8-byte encoding, so even a change in the last bit would show. Both were checked on the script's own helpers with reduced budgets, not a default run. The counts came out as 99 and 27. After 40 student epochs the teacher digest was unchanged and the student's had changed, while adding 1e-12 to a single teacher weight changed the digest.
+  </details>
+- **Limits:** Synthetic, nearly separable 2-D clusters and two tiny MLPs, not the paper's MNIST, speech or ensemble experiments. T = 2 and α = 0.9 are toy choices. Teacher and student differ in capacity and no hard-label-only student is trained, so the output does not show that distillation itself improves the student. The 96 held-out points are reported only and never used for tuning or stopping.
 - **Time:** 35 min
 - [ ] Completed
 
@@ -479,7 +494,7 @@ Connecting models to external knowledge. This track covers how to represent text
 
 ## Track 6: Full Curriculum (~22 hrs)
 
-37 of the 49 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+38 of the 50 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ### Milestone 1: Text Representation (1.5 hrs)
 
@@ -579,7 +594,9 @@ Efficient attention patterns, positional encoding, and memory-aware computation.
 
 ### Milestone 11: Inference Systems (2.5 hrs)
 
-KV caching, memory management, quantization, and decoding strategies.
+The exercises in this milestone now total 3 hrs 50 min; the heading estimate is kept unchanged so existing links to it keep working.
+
+KV caching, memory management, quantization, distillation into a smaller model, and decoding strategies.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
@@ -587,7 +604,8 @@ KV caching, memory management, quantization, and decoding strategies.
 | 26 | `03-systems/micropaged.py` | 40 min | - [ ] |
 | 27 | `03-systems/microquant.py` | 40 min | - [ ] |
 | 28 | `03-systems/microturboquant.py` | 45 min | - [ ] |
-| 29 | `03-systems/microbeam.py` | 35 min | - [ ] |
+| 29 | `02-alignment/microdistill.py` | 35 min | - [ ] |
+| 30 | `03-systems/microbeam.py` | 35 min | - [ ] |
 
 ### Milestone 12: Advanced Systems (1.5 hrs)
 
@@ -595,9 +613,9 @@ State-space models, gradient checkpointing, and parallelism — the frontier of 
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 30 | `03-systems/microssm.py` | 35 min | - [ ] |
-| 31 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
-| 32 | `03-systems/microparallel.py` | 30 min | - [ ] |
+| 31 | `03-systems/microssm.py` | 35 min | - [ ] |
+| 32 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
+| 33 | `03-systems/microparallel.py` | 30 min | - [ ] |
 
 ### Milestone 13: Mamba-3 Deep Dive (2 hrs)
 
@@ -605,9 +623,9 @@ The SSM frontier — discretization methods, complex eigenvalue dynamics, and ha
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 33 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
-| 34 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
-| 35 | `03-systems/microroofline.py` | 40 min | - [ ] |
+| 34 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
+| 35 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
+| 36 | `03-systems/microroofline.py` | 40 min | - [ ] |
 
 ### Milestone 14: Agent Algorithms (3 hrs)
 
@@ -615,8 +633,8 @@ How agents search and reason — tree search for planning and tool-augmented rea
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 36 | `04-agents/micromcts.py` | 90 min | - [ ] |
-| 37 | `04-agents/microreact.py` | 90 min | - [ ] |
+| 37 | `04-agents/micromcts.py` | 90 min | - [ ] |
+| 38 | `04-agents/microreact.py` | 90 min | - [ ] |
 
 ---
 
