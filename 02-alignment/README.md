@@ -4,7 +4,7 @@ Methods for steering, fine-tuning, and aligning models after pretraining. These 
 
 ## Scripts
 
-Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 12 programs in this tier: 11 `micro*` programs and the unprefixed comparison `adam_vs_sgd.py`.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 13 programs in this tier: 12 `micro*` programs and the unprefixed comparison `adam_vs_sgd.py`.
 
 | Script              | Algorithm                                                             | Time   | Status | Video                                             |
 | ------------------- | --------------------------------------------------------------------- | ------ | ------ | ------------------------------------------------- |
@@ -19,6 +19,7 @@ Time and Status are historical values recorded when each script was added (Apple
 | `microppo.py`       | Proximal Policy Optimization for RLHF (hybrid autograd)               | 0m 34s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microppo.gif)       |
 | `microqlora.py`     | QLoRA — fine-tuning 4-bit quantized models with LoRA adapters         | 2m 27s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microqlora.gif)     |
 | `microreinforce.py` | REINFORCE — vanilla policy gradient with baseline                     | 5m 39s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microreinforce.gif) |
+| `microrome.py`      | ROME knowledge editing: one closed-form rank-one update of a trained MLP matrix rewrites one stored fact, checked against neighbors and a C = I control | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrome.gif) |
 | `microsft.py`       | Supervised fine-tuning: pretrain a tiny decoder, then train the same weights on response-masked demonstrations | 1m 08s | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microsft.gif) |
 
 The `microsft.py` row was measured during M6 on Apple M1 Pro with CPython 3.12.8: both default runs took about 68 seconds and printed byte-identical output. Its Pass means the program's frozen training-side checks passed; it does not certify generalization, and the held-out prompts are reported only.
@@ -55,5 +56,6 @@ microdpo.py         → How preference alignment works (without reward model)
 microppo.py         → How RLHF works (the full reward → policy loop)
 microgrpo.py        → How DeepSeek simplified RLHF with group-relative rewards
 microdistill.py     → How a small student learns from a frozen teacher's soft targets
+microrome.py        → How one stored fact is rewritten by a rank-one update of an MLP matrix
 micromoe.py         → How sparse routing scales model capacity
 ```

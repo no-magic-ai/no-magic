@@ -1,6 +1,6 @@
 # Learning Path
 
-A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 38 of the 50 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 39 of the 51 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ## How to Use This Guide
 
@@ -16,11 +16,11 @@ A structured guide through the no-magic implementations. Pick a track based on y
 | Track | Focus | Time |
 |-------|-------|------|
 | 1. Weekend Sprint: Transformers | Tokenization through attention | ~4 hrs |
-| 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~4 hrs 10 min |
+| 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~4 hrs 55 min |
 | 3. Deep Dive: Modern Inference | Making models fast and small | ~7 hrs |
 | 4. Deep Dive: Generative Models | How models create new data | ~4 hrs |
 | 5. Deep Dive: Retrieval & Search | Connecting models to external knowledge | ~3 hrs |
-| 6. Full Curriculum | 38 of the 50 scripts, dependency-ordered | ~22 hrs |
+| 6. Full Curriculum | 39 of the 51 scripts, dependency-ordered | ~22 hrs |
 | 7. Agent Algorithms | Search and reasoning in autonomous agents | ~3 hrs |
 
 ---
@@ -125,9 +125,9 @@ From raw text to self-attention. This track builds the core transformer pipeline
 
 ## Track 2: Weekend Sprint — Alignment (~3 hrs)
 
-The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 4 hrs 10 min.
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 4 hrs 55 min.
 
-How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, supervised fine-tuning on demonstrations, preference optimization, reinforcement learning from human feedback, and distillation into a smaller model — the techniques that turn a base language model into a useful assistant. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people. The last step, `microdistill.py`, shows the general teacher-to-student transfer mechanism on a small 2-D classifier, not on a language model.
+How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, supervised fine-tuning on demonstrations, preference optimization, reinforcement learning from human feedback, distillation into a smaller model, and editing one stored fact in place — the techniques that turn a base language model into a useful assistant and correct it afterwards. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people. Step 7, `microdistill.py`, shows the general teacher-to-student transfer mechanism on a small 2-D classifier, not on a language model. Step 8, `microrome.py`, edits invented facts in a tiny decoder it trains itself, not a pretrained language model.
 
 **Prerequisites:** Complete Track 1, or at minimum `01-foundations/microgpt.py` (the autograd `Value` class and transformer architecture are assumed knowledge).
 
@@ -236,6 +236,21 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
   </details>
 - **Limits:** Synthetic, nearly separable 2-D clusters and two tiny MLPs, not the paper's MNIST, speech or ensemble experiments. T = 2 and α = 0.9 are toy choices. Teacher and student differ in capacity and no hard-label-only student is trained, so the output does not show that distillation itself improves the student. The 96 held-out points are reported only and never used for tuning or stopping.
 - **Time:** 35 min
+- [ ] Completed
+
+**8. `02-alignment/microrome.py`**
+- **Outcome:** You train a 3,936-parameter decoder (one MLP block and one attention readout at the last token) from random weights on 24 invented subject → city and subject → category facts (1,500 Adam steps), estimate the uncentered key covariance C from 5,246 MLP keys, and then rewrite six subjects' cities one at a time with ROME's closed-form rank-one update of the MLP output matrix. Each edit is scored for efficacy, paraphrase, neighborhood, locality and essence, next to a C = I control and a wrong-token control applied to the same trained weights.
+- **Why this step here:** Every earlier step changes weights with gradient steps over many examples. ROME changes one stored association with no gradient step on any weight: a 16-number value is found by gradient descent through the frozen network, and then one matrix receives a closed-form update ΔW = Λuᵀ. It needs `microgpt.py`'s decoder block (MLP and attention) and reads best after `microlora.py`'s low-rank ΔW; the script writes its forward and backward passes by hand and uses no autograd engine.
+- **Run:** `python 02-alignment/microrome.py`
+- **Data:** None to download; the facts and prompts are generated in the script.
+- **Links:** [source](02-alignment/microrome.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/rome.md) · [primary paper](https://arxiv.org/abs/2202.05262) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrome.gif)
+- **Predict before you run:** (1) The model has token embeddings for 37 tokens, position embeddings for 5 positions, a 64 × 16 `W_fc`, a 16 × 64 `W_proj`, four 16 × 16 attention matrices and a 12 × 16 unembedding. What parameter count will it print? (2) Each edit prints a `rome` line and an `identity` (C = I) line. Will they show the same `steps` and loss, and what `rank=` will every line show?
+  <details><summary>Check your prediction</summary>
+
+  (1) 37×16 + 5×16 + 64×16 + 16×64 + 4×16×16 + 12×16 = 592 + 80 + 1,024 + 1,024 + 1,024 + 192 = 3,936, the number the program prints. (2) Yes, identical `steps` and `L:...->...` on every pair, because v* is found before the covariance is used: the two variants share the value and differ only in u = C⁻¹k* versus u = k*. Every edit line, including the wrong-token control, prints `rank=1`, because ΔW = Λuᵀ is an outer product. The default seed-42 run under CPython 3.12.8 showed both. A separate probe of the script's own functions found that each edit changes all 1,024 entries of `W_proj` and no other tensor.
+  </details>
+- **Limits:** Invented facts, single-token subjects and a 3,936-parameter model: not GPT-2 XL, not zsRE or COUNTERFACT, and no paper-scale result. The causal trace and the wrong-token control show a route the architecture imposes (no attention before the MLP), not a discovery. Efficacy is seed-sensitive: the default seed-42 run passes every check, but in the design study efficacy reached the 0.95 threshold on only 6 of 17 seeds. The reference numbers come from CPython 3.12.8; Python 3.10 and 3.11 can print different low-order digits.
+- **Time:** 45 min
 - [ ] Completed
 
 ---
@@ -494,7 +509,7 @@ Connecting models to external knowledge. This track covers how to represent text
 
 ## Track 6: Full Curriculum (~22 hrs)
 
-38 of the 50 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+39 of the 51 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ### Milestone 1: Text Representation (1.5 hrs)
 
@@ -562,9 +577,9 @@ Adapting large models without retraining all parameters.
 
 ### Milestone 8: Alignment & RL (2 hrs)
 
-The exercises in this milestone now total 3 hrs; the heading estimate is kept unchanged so existing links to it keep working.
+The exercises in this milestone now total 3 hrs 45 min; the heading estimate is kept unchanged so existing links to it keep working.
 
-Teaching models to follow demonstrations and human preferences through supervised fine-tuning, preference optimization and reinforcement learning.
+Teaching models to follow demonstrations and human preferences through supervised fine-tuning, preference optimization and reinforcement learning, then rewriting one stored fact with a closed-form rank-one edit.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
@@ -573,6 +588,7 @@ Teaching models to follow demonstrations and human preferences through supervise
 | 18 | `02-alignment/microreinforce.py` | 35 min | - [ ] |
 | 19 | `02-alignment/microppo.py` | 35 min | - [ ] |
 | 20 | `02-alignment/microgrpo.py` | 35 min | - [ ] |
+| 21 | `02-alignment/microrome.py` | 45 min | - [ ] |
 
 ### Milestone 9: Mixture of Experts (0.5 hrs)
 
@@ -580,7 +596,7 @@ Conditional computation — activating only a subset of parameters per input.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 21 | `02-alignment/micromoe.py` | 35 min | - [ ] |
+| 22 | `02-alignment/micromoe.py` | 35 min | - [ ] |
 
 ### Milestone 10: Attention Optimization (2 hrs)
 
@@ -588,9 +604,9 @@ Efficient attention patterns, positional encoding, and memory-aware computation.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 22 | `03-systems/microattention.py` | 40 min | - [ ] |
-| 23 | `03-systems/microflash.py` | 40 min | - [ ] |
-| 24 | `03-systems/microrope.py` | 35 min | - [ ] |
+| 23 | `03-systems/microattention.py` | 40 min | - [ ] |
+| 24 | `03-systems/microflash.py` | 40 min | - [ ] |
+| 25 | `03-systems/microrope.py` | 35 min | - [ ] |
 
 ### Milestone 11: Inference Systems (2.5 hrs)
 
@@ -600,12 +616,12 @@ KV caching, memory management, quantization, distillation into a smaller model, 
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 25 | `03-systems/microkv.py` | 35 min | - [ ] |
-| 26 | `03-systems/micropaged.py` | 40 min | - [ ] |
-| 27 | `03-systems/microquant.py` | 40 min | - [ ] |
-| 28 | `03-systems/microturboquant.py` | 45 min | - [ ] |
-| 29 | `02-alignment/microdistill.py` | 35 min | - [ ] |
-| 30 | `03-systems/microbeam.py` | 35 min | - [ ] |
+| 26 | `03-systems/microkv.py` | 35 min | - [ ] |
+| 27 | `03-systems/micropaged.py` | 40 min | - [ ] |
+| 28 | `03-systems/microquant.py` | 40 min | - [ ] |
+| 29 | `03-systems/microturboquant.py` | 45 min | - [ ] |
+| 30 | `02-alignment/microdistill.py` | 35 min | - [ ] |
+| 31 | `03-systems/microbeam.py` | 35 min | - [ ] |
 
 ### Milestone 12: Advanced Systems (1.5 hrs)
 
@@ -613,9 +629,9 @@ State-space models, gradient checkpointing, and parallelism — the frontier of 
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 31 | `03-systems/microssm.py` | 35 min | - [ ] |
-| 32 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
-| 33 | `03-systems/microparallel.py` | 30 min | - [ ] |
+| 32 | `03-systems/microssm.py` | 35 min | - [ ] |
+| 33 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
+| 34 | `03-systems/microparallel.py` | 30 min | - [ ] |
 
 ### Milestone 13: Mamba-3 Deep Dive (2 hrs)
 
@@ -623,9 +639,9 @@ The SSM frontier — discretization methods, complex eigenvalue dynamics, and ha
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 34 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
-| 35 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
-| 36 | `03-systems/microroofline.py` | 40 min | - [ ] |
+| 35 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
+| 36 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
+| 37 | `03-systems/microroofline.py` | 40 min | - [ ] |
 
 ### Milestone 14: Agent Algorithms (3 hrs)
 
@@ -633,8 +649,8 @@ How agents search and reason — tree search for planning and tool-augmented rea
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 37 | `04-agents/micromcts.py` | 90 min | - [ ] |
-| 38 | `04-agents/microreact.py` | 90 min | - [ ] |
+| 38 | `04-agents/micromcts.py` | 90 min | - [ ] |
+| 39 | `04-agents/microreact.py` | 90 min | - [ ] |
 
 ---
 
