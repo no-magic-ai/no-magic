@@ -286,6 +286,17 @@
     "adaptation_note": null
   },
   {
+    "tier": "02-alignment",
+    "name": "microsft",
+    "display": "Supervised Fine-Tuning (SFT)",
+    "thesis": "Supervised fine-tuning from first principles: a tiny causal decoder is first pretrained on plain",
+    "lines": 543,
+    "paper_slug": "instructgpt",
+    "teaching_kind": "train_infer",
+    "data_source": "in_script",
+    "adaptation_note": "Toy SFT stage only: pretrains a 1,120-parameter one-layer, one-head character decoder on eight cyclic strings, then fine-tunes the same weights on 14 synthetic copy/next demonstrations and decodes greedily. The loss is masked to the response and end boundary, a teaching choice the linked card's paper does not prescribe. Each SFT update averages all 14 pairs, a regime adopted after a one-pair-per-update version failed the next-command check at seed 42. No GPT-3, human labelers, reward model or PPO stage."
+  },
+  {
     "tier": "03-systems",
     "name": "microattention",
     "display": "Attention Variants",

@@ -1,6 +1,6 @@
 # Learning Path
 
-A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 36 of the 48 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 37 of the 49 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ## How to Use This Guide
 
@@ -16,11 +16,11 @@ A structured guide through the no-magic implementations. Pick a track based on y
 | Track | Focus | Time |
 |-------|-------|------|
 | 1. Weekend Sprint: Transformers | Tokenization through attention | ~4 hrs |
-| 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~3 hrs |
+| 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~3 hrs 35 min |
 | 3. Deep Dive: Modern Inference | Making models fast and small | ~7 hrs |
 | 4. Deep Dive: Generative Models | How models create new data | ~4 hrs |
 | 5. Deep Dive: Retrieval & Search | Connecting models to external knowledge | ~3 hrs |
-| 6. Full Curriculum | 36 of the 48 scripts, dependency-ordered | ~22 hrs |
+| 6. Full Curriculum | 37 of the 49 scripts, dependency-ordered | ~22 hrs |
 | 7. Agent Algorithms | Search and reasoning in autonomous agents | ~3 hrs |
 
 ---
@@ -125,7 +125,9 @@ From raw text to self-attention. This track builds the core transformer pipeline
 
 ## Track 2: Weekend Sprint — Alignment (~3 hrs)
 
-How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, preference optimization, and reinforcement learning from human feedback — the techniques that turn a base language model into a useful assistant. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people.
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 3 hrs 35 min.
+
+How to steer a pretrained model's behavior. This track covers parameter-efficient fine-tuning, supervised fine-tuning on demonstrations, preference optimization, and reinforcement learning from human feedback — the techniques that turn a base language model into a useful assistant. Every preference signal here is synthetic: the scripts prefer names of certain lengths in place of human judgments, so they show the mechanics of each method, not alignment to people.
 
 **Prerequisites:** Complete Track 1, or at minimum `01-foundations/microgpt.py` (the autograd `Value` class and transformer architecture are assumed knowledge).
 
@@ -161,9 +163,24 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 - **Time:** 35 min
 - [ ] Completed
 
-**3. `02-alignment/microdpo.py`**
+**3. `02-alignment/microsft.py`**
+- **Outcome:** You pretrain a 1,120-parameter one-layer, one-head decoder on eight cyclic strings over `a`–`h` (200 updates, one sampled string each). Keeping those learned weights, you fine-tune them on 14 synthetic `copy:<s>>` and `next:<s>>` demonstrations with a loss on the response only (300 updates, each averaging all 14 pairs). Then you compare the base model's and the fine-tuned model's greedy answers on the training prompts and on two held-out prompts.
+- **Why this step here:** LoRA and QLoRA trained a few adapter weights on more names. SFT updates every weight so the model reproduces demonstrated responses, and it is the first stage of the InstructGPT pipeline that the preference methods in steps 4 and 6 continue from. It needs `microgpt.py`'s decoder and causal next-token loss; the script carries its own smaller copy of both.
+- **Run:** `python 02-alignment/microsft.py`
+- **Data:** None to download; the base strings and the demonstrations are generated in the script.
+- **Links:** [source](02-alignment/microsft.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/instructgpt.md) · [primary paper](https://arxiv.org/abs/2203.02155) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microsft.gif)
+- **Predict before you run:** The pretraining strings contain only `a`–`h` and the boundary token. (1) When the program reports whether the prompt-only embedding rows (`n o p t x y : >`) were untouched by pretraining, what will it say? (2) Each SFT pair is 10 tokens long. How many supervised targets per pair does the program report, and does the masked loss still send gradient into those prompt-only rows?
+  <details><summary>Check your prediction</summary>
+
+  (1) `True`, and exactly so. These tokens are never inputs during pretraining, so their embedding rows get zero gradient. Adam's moments stay at 0, and the update `0 / (0 + 1e-8)` is exactly zero. (2) 2 of the 9 next-token positions: the response character, predicted at position 7, and the end boundary, predicted at position 8. The gradient is nonzero, because the prompt positions feed the attention cache that position 7 reads. Masking removes prompt targets, not prompt inputs. Both answers were checked on the script's own helpers with reduced budgets, not a default run. Ten pretraining updates left the prompt-only rows bit-for-bit unchanged while other weights moved. The masked loss of one pair equalled the mean of the position-7 and position-8 negative log-likelihoods. At initialization, the full-batch SFT gradient on the prompt-only rows summed to about 0.67 in absolute value, with exactly 0 on the never-used position-9 embedding. The magnitude the program prints depends on the pretrained weights.
+  </details>
+- **Limits:** A 1,120-parameter toy on synthetic two-command demonstrations, not GPT-3, human labelers or InstructGPT's results. The response-only mask is a teaching choice that the InstructGPT paper does not prescribe. Full-batch SFT was adopted after a one-pair-per-update version failed the program's own `next` check at seed 42 (3/7 against the required 4/7). The support for the change is a post-hoc training-prompt comparison over seeds 0–15 (14/16 passing against 4/16), not a pre-registered test, and two of those seeds still fail. The acceptance check uses training prompts only; the two held-out prompts are reported, with no promise that they improve. The base-corpus loss after SFT is printed to show how much pretraining behavior moved, not to bound it.
+- **Time:** 35 min
+- [ ] Completed
+
+**4. `02-alignment/microdpo.py`**
 - **Outcome:** You pretrain a base model (700 steps), freeze a copy as the reference policy, build up to 150 synthetic preference pairs that prefer a name of 5 or more letters (chosen) over a 3-letter name (rejected) sharing its first two letters — so the rejected completion after that prefix is a single letter — run 60 DPO steps with β = 0.1, and compare the average generated length of the reference and aligned models.
-- **Why this step here:** It changes a model from preference pairs with one supervised loss and no reward model, sampling or RL loop. It needs `microgpt.py`'s sequence log-probabilities. Steps 4 and 5 then show the reinforcement-learning route that DPO avoids.
+- **Why this step here:** It changes a model from preference pairs with one supervised loss and no reward model, sampling or RL loop. It needs `microgpt.py`'s sequence log-probabilities. Steps 5 and 6 then show the reinforcement-learning route that DPO avoids.
 - **Run:** `python 02-alignment/microdpo.py`
 - **Data:** `names.txt`, downloaded on first run; the preference pairs are built from it by name length.
 - **Links:** [source](02-alignment/microdpo.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/dpo.md) · [primary paper](https://arxiv.org/abs/2305.18290) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdpo.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/dpo.md)
@@ -176,9 +193,9 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 - **Time:** 40 min
 - [ ] Completed
 
-**4. `02-alignment/microreinforce.py`**
+**5. `02-alignment/microreinforce.py`**
 - **Outcome:** You train a small policy network that emits 8-letter strings scored by hand-written rules, first with raw REINFORCE and then with an exponential-moving-average reward baseline, and compare gradient-norm variance, average reward and samples.
-- **Why this step here:** PPO in step 5 builds directly on the REINFORCE gradient, the log-probability of each sampled action weighted by the reward. The policy is a two-layer MLP over the previous letter and position, not a language model; from `microgpt.py` you need only the `Value` engine and softmax log-probabilities, which the script re-implements.
+- **Why this step here:** PPO in step 6 builds directly on the REINFORCE gradient, the log-probability of each sampled action weighted by the reward. The policy is a two-layer MLP over the previous letter and position, not a language model; from `microgpt.py` you need only the `Value` engine and softmax log-probabilities, which the script re-implements.
 - **Run:** `python 02-alignment/microreinforce.py`
 - **Data:** None to download; the policy samples letters from its own 26-letter vocabulary.
 - **Links:** [source](02-alignment/microreinforce.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/reinforce.md) · [primary paper](https://link.springer.com/article/10.1007/BF00992696) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microreinforce.gif)
@@ -191,9 +208,9 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 - **Time:** 35 min
 - [ ] Completed
 
-**5. `02-alignment/microppo.py`**
+**6. `02-alignment/microppo.py`**
 - **Outcome:** You pretrain a smaller GPT (8-dimensional, 2 heads, 500 steps), train an MLP reward model on synthetic pairs that prefer 4–7 letter names, then run 100 policy updates with a clipped surrogate objective, a squared log-ratio penalty against the pretrained policy (coefficient 0.5) and a linear value baseline, and compare rewards and samples before and after.
-- **Why this step here:** It is the full RLHF loop — pretrain, reward model, policy optimisation — built from the REINFORCE gradient of step 4 plus a learned baseline and a penalty that keeps the policy near its starting point. DPO (step 3) reaches a related objective without the reward model and sampling.
+- **Why this step here:** It is the full RLHF loop — pretrain, reward model, policy optimisation — built from the REINFORCE gradient of step 5 plus a learned baseline and a penalty that keeps the policy near its starting point. DPO (step 4) reaches a related objective without the reward model and sampling.
 - **Run:** `python 02-alignment/microppo.py`
 - **Data:** `names.txt`, downloaded on first run; the preference pairs are built from it by name length.
 - **Links:** [source](02-alignment/microppo.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/ppo.md) · [primary paper](https://arxiv.org/abs/1707.06347) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microppo.gif)
@@ -462,7 +479,7 @@ Connecting models to external knowledge. This track covers how to represent text
 
 ## Track 6: Full Curriculum (~22 hrs)
 
-36 of the 48 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+37 of the 49 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ### Milestone 1: Text Representation (1.5 hrs)
 
@@ -530,14 +547,17 @@ Adapting large models without retraining all parameters.
 
 ### Milestone 8: Alignment & RL (2 hrs)
 
-Teaching models to follow human preferences through optimization and reinforcement learning.
+The exercises in this milestone now total 3 hrs; the heading estimate is kept unchanged so existing links to it keep working.
+
+Teaching models to follow demonstrations and human preferences through supervised fine-tuning, preference optimization and reinforcement learning.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 16 | `02-alignment/microdpo.py` | 40 min | - [ ] |
-| 17 | `02-alignment/microreinforce.py` | 35 min | - [ ] |
-| 18 | `02-alignment/microppo.py` | 35 min | - [ ] |
-| 19 | `02-alignment/microgrpo.py` | 35 min | - [ ] |
+| 16 | `02-alignment/microsft.py` | 35 min | - [ ] |
+| 17 | `02-alignment/microdpo.py` | 40 min | - [ ] |
+| 18 | `02-alignment/microreinforce.py` | 35 min | - [ ] |
+| 19 | `02-alignment/microppo.py` | 35 min | - [ ] |
+| 20 | `02-alignment/microgrpo.py` | 35 min | - [ ] |
 
 ### Milestone 9: Mixture of Experts (0.5 hrs)
 
@@ -545,7 +565,7 @@ Conditional computation — activating only a subset of parameters per input.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 20 | `02-alignment/micromoe.py` | 35 min | - [ ] |
+| 21 | `02-alignment/micromoe.py` | 35 min | - [ ] |
 
 ### Milestone 10: Attention Optimization (2 hrs)
 
@@ -553,9 +573,9 @@ Efficient attention patterns, positional encoding, and memory-aware computation.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 21 | `03-systems/microattention.py` | 40 min | - [ ] |
-| 22 | `03-systems/microflash.py` | 40 min | - [ ] |
-| 23 | `03-systems/microrope.py` | 35 min | - [ ] |
+| 22 | `03-systems/microattention.py` | 40 min | - [ ] |
+| 23 | `03-systems/microflash.py` | 40 min | - [ ] |
+| 24 | `03-systems/microrope.py` | 35 min | - [ ] |
 
 ### Milestone 11: Inference Systems (2.5 hrs)
 
@@ -563,11 +583,11 @@ KV caching, memory management, quantization, and decoding strategies.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 24 | `03-systems/microkv.py` | 35 min | - [ ] |
-| 25 | `03-systems/micropaged.py` | 40 min | - [ ] |
-| 26 | `03-systems/microquant.py` | 40 min | - [ ] |
-| 27 | `03-systems/microturboquant.py` | 45 min | - [ ] |
-| 28 | `03-systems/microbeam.py` | 35 min | - [ ] |
+| 25 | `03-systems/microkv.py` | 35 min | - [ ] |
+| 26 | `03-systems/micropaged.py` | 40 min | - [ ] |
+| 27 | `03-systems/microquant.py` | 40 min | - [ ] |
+| 28 | `03-systems/microturboquant.py` | 45 min | - [ ] |
+| 29 | `03-systems/microbeam.py` | 35 min | - [ ] |
 
 ### Milestone 12: Advanced Systems (1.5 hrs)
 
@@ -575,9 +595,9 @@ State-space models, gradient checkpointing, and parallelism — the frontier of 
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 29 | `03-systems/microssm.py` | 35 min | - [ ] |
-| 30 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
-| 31 | `03-systems/microparallel.py` | 30 min | - [ ] |
+| 30 | `03-systems/microssm.py` | 35 min | - [ ] |
+| 31 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
+| 32 | `03-systems/microparallel.py` | 30 min | - [ ] |
 
 ### Milestone 13: Mamba-3 Deep Dive (2 hrs)
 
@@ -585,9 +605,9 @@ The SSM frontier — discretization methods, complex eigenvalue dynamics, and ha
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 32 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
-| 33 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
-| 34 | `03-systems/microroofline.py` | 40 min | - [ ] |
+| 33 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
+| 34 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
+| 35 | `03-systems/microroofline.py` | 40 min | - [ ] |
 
 ### Milestone 14: Agent Algorithms (3 hrs)
 
@@ -595,8 +615,8 @@ How agents search and reason — tree search for planning and tool-augmented rea
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 35 | `04-agents/micromcts.py` | 90 min | - [ ] |
-| 36 | `04-agents/microreact.py` | 90 min | - [ ] |
+| 36 | `04-agents/micromcts.py` | 90 min | - [ ] |
+| 37 | `04-agents/microreact.py` | 90 min | - [ ] |
 
 ---
 

@@ -71,6 +71,7 @@ DISPLAY_OVERRIDES: dict[str, str] = {
     "microcomplexssm": "Complex SSM",
     "microdiscretize": "Discretization",
     "microroofline": "Roofline Model",
+    "microsft": "Supervised Fine-Tuning (SFT)",
     "microspeculative": "Speculative Decoding",
     "microvectorsearch": "Vector Search",
     "microbandit": "Multi-Armed Bandit",
@@ -128,6 +129,7 @@ SCRIPT_TO_PAPER: dict[str, str] = {
     "micrornn": "rnn-elman",
     "microroofline": "roofline",
     "microrope": "rope",
+    "microsft": "instructgpt",
     "microspeculative": "speculative-decoding",
     "microssm": "mamba-2",
     "microtokenizer": "bpe",
@@ -356,6 +358,17 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "illustrative, not GPU benchmarks.",
     ),
     "microrope": TeachingContract("forward_pass", "in_script"),
+    "microsft": TeachingContract(
+        "train_infer",
+        "in_script",
+        "Toy SFT stage only: pretrains a 1,120-parameter one-layer, one-head character "
+        "decoder on eight cyclic strings, then fine-tunes the same weights on 14 synthetic "
+        "copy/next demonstrations and decodes greedily. The loss is masked to the response "
+        "and end boundary, a teaching choice the linked card's paper does not prescribe. "
+        "Each SFT update averages all 14 pairs, a regime adopted after a one-pair-per-update "
+        "version failed the next-command check at seed 42. No GPT-3, human labelers, reward "
+        "model or PPO stage.",
+    ),
     "microspeculative": TeachingContract("train_infer", "names_download"),
     "microssm": TeachingContract(
         "train_infer",
