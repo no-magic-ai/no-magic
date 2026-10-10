@@ -771,7 +771,7 @@ This prevents readers from skipping the autograd section and missing per-script 
 - Mechanism: the runtime identities above hold for the ROME and C = I edits of all six subjects; C is symmetric with pivots ≥ 1e-12
 - Behavior of the ROME edits (mean over six): efficacy ≥ 0.95, paraphrase ≥ 0.80 with at least 80% of paraphrase prompts eligible, neighborhood ≥ 0.90, locality ≥ 0.95, essence ≥ 0.98
 - Controls and the causal trace are reported only; no paper-scale or zsRE/COUNTERFACT result is claimed, and efficacy is known to be seed-sensitive
-- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel)
+- Runtime: < 7 minutes on M-series Mac (< 10 minutes legacy Intel). The default took about 65 seconds on Apple M1 Pro with CPython 3.12.8; legacy Intel was not measured
 
 **Expected complexity:** ~1,050-1,100 lines. Manual forward and backward passes on plain lists; no autograd engine is needed.
 

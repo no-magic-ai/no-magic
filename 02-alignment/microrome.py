@@ -52,7 +52,7 @@ a value and a key covariance -- no gradient step on any weight, no lookup table,
 #     E.5 reports and was not tuned. The authors' released code differs from the paper text
 #     (pinned commit 0874014cd9837e4365f3e6f3c71400ef11509e04, hparams/ROME/gpt2-xl.json and
 #     rome/compute_v.py): kl_factor 0.0625, v_lr 0.5, 20 steps, a perturbation delta = z - z0
-#     optimised instead of z, weight decay inside the loss on ||delta||/||z0||, and a norm clamp
+#     optimised instead of z, decay 0.5 ||delta|| / ||z0||^2 inside the loss, and a norm clamp
 #     at 4 ||z0||. This script follows the paper text, not the released code.
 #  8. Evaluation uses fixed small prompt sets (20 and 8 prefixes) and the paper's success
 #     comparisons ES / PS / NS (Sec. 3.2-3.4); no magnitude scores (EM/PM/NM), no fluency or
@@ -705,8 +705,8 @@ def numeric_rank(matrix: Matrix, tol: float) -> int:
 
 
 def edit_contexts(subject: int) -> list[Prompt]:
-    """The N = 20 prefixes x_j used for both k* (Eq. 3) and v* (Eq. 4). Drawn from a stream
-    that the evaluation never uses, so the edit is scored on prefixes it was not fitted to."""
+    """The N = 20 prefixes x_j used for both k* (Eq. 3) and v* (Eq. 4), drawn from their own
+    stream. Evaluation uses a separate stream; the same prefix can still occur in both sets."""
     rng = stream(100 + subject)
     return [sample_prefix(rng) for _ in range(NUM_EDIT_CONTEXTS)]
 
@@ -783,7 +783,7 @@ def mechanical_checks(
 
 
 def make_eval_sets() -> list[Prompt]:
-    """20 evaluation prefixes from their own stream, disjoint from the edit prefixes."""
+    """20 evaluation prefixes from a separate stream; they can coincide with edit prefixes."""
     rng = stream(5)
     return [sample_prefix(rng) for _ in range(NUM_EVAL_CONTEXTS)]
 
