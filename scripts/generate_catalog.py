@@ -265,10 +265,10 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "saturates near k = 20 (0.810, against 0.806 at k = 40). Trace versus direct on that "
         "run (+0.052, p = 0.083, unequal budgets; the direct arm differed slightly in one "
         "Ubuntu CI run) is not claimed. Faithfulness is only partial: the answer copies a "
-        "written last sum in 0.831 of corrupted traces, but later steps follow a corrupted "
-        "first step only about 30-34% of the time. The held-out slice leans toward repeated "
-        "digits. Toy scale: no emergence, faithful-reasoning, paper-scale or "
-        "general-reasoning claim.",
+        "written last sum in 0.831 of internally consistent corrupted traces, but later steps "
+        "follow a corrupted first step only about 30-34% of the time. The held-out slice "
+        "leans toward repeated digits. Toy scale: no emergence, faithful-reasoning, "
+        "paper-scale or general-reasoning claim.",
     ),
     "microdiffusion": TeachingContract("train_infer", "in_script"),
     "microdiscretize": TeachingContract(
