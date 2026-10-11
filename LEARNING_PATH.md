@@ -1,6 +1,6 @@
 # Learning Path
 
-A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 40 of the 52 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 41 of the 53 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ## How to Use This Guide
 
@@ -17,10 +17,10 @@ A structured guide through the no-magic implementations. Pick a track based on y
 |-------|-------|------|
 | 1. Weekend Sprint: Transformers | Tokenization through attention | ~4 hrs |
 | 2. Weekend Sprint: Alignment | Steering model behavior post-training | ~4 hrs 55 min |
-| 3. Deep Dive: Modern Inference | Making models fast and small | ~8 hrs 45 min |
+| 3. Deep Dive: Modern Inference | Making models fast and small | ~9 hrs 45 min |
 | 4. Deep Dive: Generative Models | How models create new data | ~4 hrs |
 | 5. Deep Dive: Retrieval & Search | Connecting models to external knowledge | ~3 hrs |
-| 6. Full Curriculum | 40 of the 52 scripts, dependency-ordered | ~28 hrs 20 min |
+| 6. Full Curriculum | 41 of the 53 scripts, dependency-ordered | ~29 hrs 20 min |
 | 7. Agent Algorithms | Search and reasoning in autonomous agents | ~3 hrs |
 
 ---
@@ -257,7 +257,7 @@ How to steer a pretrained model's behavior. This track covers parameter-efficien
 
 ## Track 3: Deep Dive — Modern Inference (~7 hrs)
 
-The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 8 hrs 45 min.
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 9 hrs 45 min.
 
 Making models fast and small. This track covers every major inference optimization: efficient attention patterns, positional encoding, KV caching, memory management, quantization, decoding strategies, and state-space models. Every program here runs on a CPU in pure Python, so speed and memory figures are counts and illustrative timings, not GPU benchmarks.
 
@@ -297,7 +297,7 @@ Making models fast and small. This track covers every major inference optimizati
 
 **3. `03-systems/microrope.py`**
 - **Outcome:** You rotate query and key pairs by position-dependent angles, show that RoPE scores for the same relative distance agree at different absolute positions while additive sinusoidal scores do not, and compare learned, sinusoidal, RoPE and NTK-scaled RoPE scores beyond the learned table's 64 positions.
-- **Why this step here:** It changes how position enters the query–key dot product from step 1. Step 11 reuses the same 2×2 rotation inside a state-space model.
+- **Why this step here:** It changes how position enters the query–key dot product from step 1. Step 12 reuses the same 2×2 rotation inside a state-space model.
 - **Run:** `python 03-systems/microrope.py`
 - **Data:** None to download; random vectors.
 - **Links:** [source](03-systems/microrope.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/rope.md) · [primary paper](https://arxiv.org/abs/2104.09864) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microrope.gif) · [optional lesson](https://github.com/no-magic-ai/no-magic-papers/blob/main/lessons/rope.md)
@@ -385,7 +385,22 @@ Making models fast and small. This track covers every major inference optimizati
 - **Time:** 35 min
 - [ ] Completed
 
-**9. `03-systems/microssm.py`**
+**9. `03-systems/microcot.py`**
+- **Outcome:** You train one tiny position-slot language model (17,345 parameters, no attention) twice from the same initialization on four-digit sums mod 10: once to answer directly (`3+7+2+9=` → `1.`) and once to write a route token and three partial sums before the answer (`3+7+2+9=` → `L021#1.`, `R181#1.` or `T011#1.` for the three equally valid routes L, R and T). You then decode the trace model greedily and by self-consistency: sample 40 traces at temperature 0.7, read the digit after `#`, and take a majority vote with an explicit tie rule and abstention. The program prints model-written traces, the vote against greedy at k = 1, 5, 10, 20 and 40, the voting arithmetic of two problems, every route forced in turn, faithfulness probes and its pre-registered gates.
+- **Why this step here:** Step 8 compares rules for picking the next token; this step samples whole reasoning traces and decides between their final answers. It needs only sampling at a temperature (step 8) and supervised next-token training; the model is trained in the script with hand-written gradients.
+- **Run:** `python 03-systems/microcot.py` (about 5 minutes: 303.3 s and 307.3 s in two default runs on a loaded Apple M1 Pro with CPython 3.12.8; slower machines take longer)
+- **Data:** None to download; the problems are generated in the script and the held-out split is embedded as two short lists checked by a SHA-256 digest.
+- **Links:** [source](03-systems/microcot.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/self-consistency.md) · [primary paper](https://arxiv.org/abs/2203.11171) · [related card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/chain-of-thought.md) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcot.gif)
+- **Predict before you run:** (1) Forty samples split their answers 12 / 12 / 9 / 7 between the digits 4, 7, 2 and 6, and the Eq. 1 weights of the samples answering 4 and 7 sum to 2.07 and 1.81. What does `aggregate(samples, "majority")` return, and what if those two sums were equal? (2) At temperature 0.7 a single sampled trace is right less often than the greedy trace. Can a vote over 40 such samples beat greedy, and what must hold for that?
+  <details><summary>Check your prediction</summary>
+
+  (1) `(4, "eq1-weight")`: 4 and 7 tie on 12 votes and the higher summed Eq. 1 weight wins; with equal sums the rule falls back to the smaller digit, `(4, "smallest-digit")`. (2) Yes. In the pre-registered seed-42 run, which the default must reproduce exactly under CPython 3.12.8 on the Apple M1 Pro qualification host, a single sample at τ = 0.7 is right 0.639 of the time against greedy's 0.702, yet the k = 40 vote reaches 0.806 (+52 of 500 problems, exact McNemar p = 8.5e-09). The correct digit has to be the single most common answer while the wrong answers scatter; the three routes make different mistakes, and all 500 problems sample at least two routes. Part of the gain only undoes greedy's own route choice: forcing route L scores 0.738, so the margin over the best single route, chosen after seeing the test slice, is +0.068.
+  </details>
+- **Limits:** A toy: a position-slot MLP on a synthetic digit task, not a transformer or natural language, with no emergence, paper-scale or general-reasoning claim. Route diversity is built into the training data (three fixed operand orders), unlike the free-form diversity of the paper, and the trace arm is supervised scratchpad training, not Wei et al.'s few-shot prompting. Trace versus direct (+0.052, p = 0.083 on the pinned run) is not claimed; the trace arm uses about 5.8 times the supervised tokens. The faithfulness probes show only partial dependence of the answer on the written steps. The held-out slice leans toward repeated digits, and the exact numbers hold for one seed, one partition and CPython 3.12.8 on the Apple M1 Pro qualification host; a GitHub Ubuntu CI run differed slightly in the direct arm (see the [systems README](03-systems/README.md)).
+- **Time:** 60 min
+- [ ] Completed
+
+**10. `03-systems/microssm.py`**
 - **Outcome:** You build a one-layer selective state-space model (Euler discretization, input-dependent step size Δ and input-dependent B and C), train it for 800 steps on 250 names, sample names, and read an RNN/transformer/SSM comparison table.
 - **Why this step here:** It replaces attention and its growing cache (step 4) with a fixed-size state updated by a linear recurrence, and makes that update depend on the input.
 - **Run:** `python 03-systems/microssm.py`
@@ -400,9 +415,9 @@ Making models fast and small. This track covers every major inference optimizati
 - **Time:** 35 min
 - [ ] Completed
 
-**10. `03-systems/microdiscretize.py`**
+**11. `03-systems/microdiscretize.py`**
 - **Outcome:** You train the same small SSM three times — Euler, zero-order hold (ZOH) and trapezoidal discretization — on an irregular sine-prediction task and a running-parity task, then print a stability table of |Ā| against the step size Δ.
-- **Why this step here:** Step 9 used Euler discretization; this step shows what that choice costs and what the exponential alternatives buy.
+- **Why this step here:** Step 10 used Euler discretization; this step shows what that choice costs and what the exponential alternatives buy.
 - **Run:** `python 03-systems/microdiscretize.py`
 - **Data:** None to download; sine and parity sequences are generated in the script.
 - **Links:** [source](03-systems/microdiscretize.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdiscretize.gif)
@@ -415,9 +430,9 @@ Making models fast and small. This track covers every major inference optimizati
 - **Time:** 40 min
 - [ ] Completed
 
-**11. `03-systems/microcomplexssm.py`**
+**12. `03-systems/microcomplexssm.py`**
 - **Outcome:** You show that a complex-valued diagonal SSM and a real SSM that rotates paired state dimensions with 2×2 matrices (a data-dependent RoPE) produce the same outputs to floating-point precision, then train real-only, complex and rotation variants on running parity.
-- **Why this step here:** It joins the SSM of steps 9–10 with the rotation of step 3: a complex multiply is a scaled 2×2 rotation.
+- **Why this step here:** It joins the SSM of steps 10–11 with the rotation of step 3: a complex multiply is a scaled 2×2 rotation.
 - **Run:** `python 03-systems/microcomplexssm.py`
 - **Data:** None to download; random bit sequences with running-XOR labels.
 - **Links:** [source](03-systems/microcomplexssm.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/mamba-2.md) · [primary paper](https://arxiv.org/abs/2405.21060) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microcomplexssm.gif)
@@ -430,9 +445,9 @@ Making models fast and small. This track covers every major inference optimizati
 - **Time:** 40 min
 - [ ] Completed
 
-**12. `03-systems/microroofline.py`**
+**13. `03-systems/microroofline.py`**
 - **Outcome:** You compute arithmetic intensity (FLOPs per byte) for a vector add, an outer product and two matrix multiplies, place pure-Python timings on an ASCII roofline built from assumed CPU peaks (50 GFLOPS, 100 GB/s), compare SISO and rank-16 MIMO SSM state updates, and train SISO and rank-4 MIMO SSMs on dual-sine prediction.
-- **Why this step here:** It uses hardware arithmetic to show why writing the SSM update of steps 9–11 as a matrix multiply (MIMO) instead of an outer product (SISO) raises arithmetic intensity, which matters on accelerators even though it adds FLOPs.
+- **Why this step here:** It uses hardware arithmetic to show why writing the SSM update of steps 10–12 as a matrix multiply (MIMO) instead of an outer product (SISO) raises arithmetic intensity, which matters on accelerators even though it adds FLOPs.
 - **Run:** `python 03-systems/microroofline.py`
 - **Data:** None to download; sine sequences are generated in the script.
 - **Links:** [source](03-systems/microroofline.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/roofline.md) · [primary paper](https://dl.acm.org/doi/10.1145/1498765.1498785) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microroofline.gif)
@@ -445,7 +460,7 @@ Making models fast and small. This track covers every major inference optimizati
 - **Time:** 40 min
 - [ ] Completed
 
-**13. `03-systems/microwatermark.py`**
+**14. `03-systems/microwatermark.py`**
 - **Outcome:** You train a 1,992-parameter word-level language model (two-token context, 8-dimensional embeddings, 24 tanh units) on a 48-word synthetic grammar, then generate 200-token texts with and without a keyed green-list watermark: a keyed hash of the previous token picks a green quarter of the vocabulary, and the sampler adds δ = 2 to the green logits before sampling. A detector that sees only the tokens and the key turns the green count into a z-score, plain (every scored pair) and deduplicated (each distinct pair once). The program scores 200 watermarked texts against wrong-key, unwatermarked, grammar-text, repetitive, shuffled and sharpened controls and prints 30 frozen pass/fail gates.
 - **Why this step here:** Step 8 compares rules for *which* token to pick; this step changes the distribution a sampler draws from, in a way that depends on a secret key, and adds the other half of the scheme: a statistical test that needs no model at all. It needs only a softmax over logits and sampling at a temperature.
 - **Run:** `python 03-systems/microwatermark.py`
@@ -526,9 +541,9 @@ Connecting models to external knowledge. This track covers how to represent text
 
 ## Track 6: Full Curriculum (~22 hrs)
 
-The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 28 hrs 20 min.
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 29 hrs 20 min.
 
-40 of the 52 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+41 of the 53 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ### Milestone 1: Text Representation (1.5 hrs)
 
@@ -629,9 +644,9 @@ Efficient attention patterns, positional encoding, and memory-aware computation.
 
 ### Milestone 11: Inference Systems (2.5 hrs)
 
-The exercises in this milestone now total 4 hrs 50 min; the heading estimate is kept unchanged so existing links to it keep working.
+The exercises in this milestone now total 5 hrs 50 min; the heading estimate is kept unchanged so existing links to it keep working.
 
-KV caching, memory management, quantization, distillation into a smaller model, decoding strategies, and watermarking generated text with a keyed logit bias that a z-test can detect.
+KV caching, memory management, quantization, distillation into a smaller model, decoding strategies, self-consistency voting over sampled reasoning traces, and watermarking generated text with a keyed logit bias that a z-test can detect.
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
@@ -641,7 +656,8 @@ KV caching, memory management, quantization, distillation into a smaller model, 
 | 29 | `03-systems/microturboquant.py` | 45 min | - [ ] |
 | 30 | `02-alignment/microdistill.py` | 35 min | - [ ] |
 | 31 | `03-systems/microbeam.py` | 35 min | - [ ] |
-| 32 | `03-systems/microwatermark.py` | 60 min | - [ ] |
+| 32 | `03-systems/microcot.py` | 60 min | - [ ] |
+| 33 | `03-systems/microwatermark.py` | 60 min | - [ ] |
 
 ### Milestone 12: Advanced Systems (1.5 hrs)
 
@@ -649,9 +665,9 @@ State-space models, gradient checkpointing, and parallelism — the frontier of 
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 33 | `03-systems/microssm.py` | 35 min | - [ ] |
-| 34 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
-| 35 | `03-systems/microparallel.py` | 30 min | - [ ] |
+| 34 | `03-systems/microssm.py` | 35 min | - [ ] |
+| 35 | `03-systems/microcheckpoint.py` | 30 min | - [ ] |
+| 36 | `03-systems/microparallel.py` | 30 min | - [ ] |
 
 ### Milestone 13: Mamba-3 Deep Dive (2 hrs)
 
@@ -659,9 +675,9 @@ The SSM frontier — discretization methods, complex eigenvalue dynamics, and ha
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 36 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
-| 37 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
-| 38 | `03-systems/microroofline.py` | 40 min | - [ ] |
+| 37 | `03-systems/microdiscretize.py` | 40 min | - [ ] |
+| 38 | `03-systems/microcomplexssm.py` | 40 min | - [ ] |
+| 39 | `03-systems/microroofline.py` | 40 min | - [ ] |
 
 ### Milestone 14: Agent Algorithms (3 hrs)
 
@@ -669,8 +685,8 @@ How agents search and reason — tree search for planning and tool-augmented rea
 
 | # | Script | Time | Checkbox |
 |---|--------|------|----------|
-| 39 | `04-agents/micromcts.py` | 90 min | - [ ] |
-| 40 | `04-agents/microreact.py` | 90 min | - [ ] |
+| 40 | `04-agents/micromcts.py` | 90 min | - [ ] |
+| 41 | `04-agents/microreact.py` | 90 min | - [ ] |
 
 ---
 
