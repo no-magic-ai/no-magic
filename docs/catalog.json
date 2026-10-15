@@ -56,6 +56,17 @@
   },
   {
     "tier": "01-foundations",
+    "name": "microerrorbars",
+    "display": "Error Bars for Evals",
+    "thesis": "Eval error bars checked against a known truth: coverage, paired comparisons and questions needed.",
+    "lines": 505,
+    "paper_slug": "adding-error-bars-to-evals",
+    "teaching_kind": "comparison",
+    "data_source": "in_script",
+    "adaptation_note": "Trains two logistic-regression arms (8 and 7 of 8 synthetic Gaussian features) and simulates seeded evals. The coverage study of CLT, bootstrap and Wilson intervals and the Wilson reference extend the card; the unpaired minimum-detectable-effect and required-n rows extend Eq. 10. Toy synthetic arms, not real LLM evals; one seed, no clustered standard errors."
+  },
+  {
+    "tier": "01-foundations",
     "name": "microgan",
     "display": "GAN",
     "thesis": "Two networks at war -- how a generator learns to fool a discriminator, and why the",

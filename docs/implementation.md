@@ -25,7 +25,8 @@ no-magic/
 │   ├── microembedding.py
 │   ├── microrag.py
 │   ├── microdiffusion.py
-│   └── microvae.py
+│   ├── microvae.py
+│   └── microerrorbars.py
 ├── 02-alignment/
 │   ├── README.md               # Algorithm list + roadmap
 │   ├── microlora.py
@@ -405,6 +406,59 @@ This prevents readers from skipping the autograd section and missing per-script 
 - Runtime: < 4 minutes on M-series Mac
 
 **Expected complexity:** ~200-250 lines. Conceptually elegant; the tricky part is making the reparameterization trick crystal clear in code.
+
+---
+
+### `microerrorbars.py` — Error Bars for Evals
+
+> _"An eval score is a sample mean: put an error bar on it, check when the textbook bar fails, compare two models on the same questions, and ask how many questions an effect needs."_
+
+**What it teaches:**
+
+- The CLT standard error of an eval mean (Miller 2024, Eq. 1–3, arXiv 2411.00640): `mean ± z · sqrt(Var / n)` with one shared z = 1.959964 and the unbiased `n − 1` variance
+- Where that error bar is trustworthy: simulated coverage of CLT, percentile-bootstrap and Wilson 95% intervals over a (true mean, n) grid, including the CLT interval's exactly-zero width when every score is equal. The coverage study and the Wilson reference are this program's extension: Miller §2.1 calls bootstrapping unnecessary unless a complicated sampling scheme or estimator is used and applies the CLT to evals with a large number of questions; the Wilson interval follows Brown, Cai & DasGupta (2001), Statistical Science 16(2), doi:10.1214/ss/1009213286
+- Paired versus unpaired comparison of two models (Eq. 5 and Eq. 7): `Var(A − B) = Var(A) + Var(B) − 2 Cov(A, B)`, so scoring both models on the same questions shrinks the error bar when their scores correlate
+- Minimum detectable effect and required sample size (Eq. 10 and Eq. 9) at α = 0.05 and 80% power, plus an unpaired variant that is this program's extension of Eq. 10 (Eq. 9 assumes paired analysis), and a simulated power check
+- What the toy leaves out: question clustering (Miller §2.2), real LLM scores and more than one seed
+
+**Algorithm outline:**
+
+```text
+1. Derive z = Phi^-1(0.975) by hand-written bisection; every interval shares it
+2. Part A: for each mu in (0.50, 0.80, 0.95) and n in (30, 100, 500) draw 1,000 evals of n
+   binary scores (difficulty x ~ U[2mu - 1, 1], score ~ Bernoulli(x), one answer per
+   question); build CLT, 1,000-resample percentile-bootstrap and Wilson intervals; print
+   coverage of mu, its Monte Carlo SE, mean width and the share of zero-width intervals
+3. Part B: train two logistic regressions by gradient descent on 2,000 synthetic Gaussian
+   items (arm A sees 8 features, arm B the first 7), score both on a 20,000-item pool, then
+   draw eval sets without replacement at n in (30, 100, 500) and compare coverage and width
+   of the unpaired and paired intervals for the pool accuracy difference
+4. Part C: turn the pool variance of A − B into a minimum detectable effect and a required n
+   (paired and unpaired), reproduce Miller's worked example arithmetic, and check predicted
+   power against 1,000 simulated paired z-tests
+5. Print three gates (G1 training, G2 arithmetic, G3 row completeness) ending in PASS or FAIL
+```
+
+**Dataset:** None to download. Part A scores are drawn in the script; Part B generates a seeded Gaussian-feature classification pool whose Bayes accuracy is computed analytically.
+
+**Key implementation details:**
+
+- Every interval uses the single z from the hand-written inverse normal; no `statistics` module, no external imports
+- The percentile bootstrap draws each resample explicitly with `random.choices(scores, k=n)` and picks sorted positions by integer arithmetic to avoid a floating-point index error
+- The unpaired and paired intervals differ only in the standard error (Eq. 5 versus Eq. 7); the coverage target is the pool difference, and the eval sets are drawn without replacement with no finite-population correction, which the output labels
+- Unpaired minimum-detectable-effect and required-n rows are labeled as an extension of Eq. 10
+- Part A has K = 1 answer per question, so the difficulty layer does not change coverage; this is stated in the source
+- Gates check correctness only (arithmetic, training, row counts), never an effect size
+
+**Success criteria:**
+
+- G1: both arms' pool accuracy within 0.02 of the analytic Bayes accuracy and final log-loss below ln 2
+- G2: z = 1.959964, Miller's example n = 968.997, Wilson edge cases (k = 0 and k = n) and the Var(A − B) identity hold
+- G3: all 27 + 3 + 16 rows are printed
+- Two default runs print identical output apart from `[timing]` lines
+- Runtime: the longest part by far is Part A's bootstrap; measured runtimes are recorded in `01-foundations/README.md`
+
+**Expected complexity:** 627 lines including the comment and docstring commentary. Pure-Python lists, a hand-written logistic-regression gradient step and hand-written statistics.
 
 ---
 
@@ -1210,6 +1264,7 @@ Scripts were built in this order to manage dependencies and validate the shared 
 | **Phase 9** | `microrome.py`                                                       | Trains its own small decoder with manual gradients, then edits it in closed form; it needs the decoder concepts of microgpt and imports nothing from other scripts. |
 | **Phase 10** | `microwatermark.py`                                                 | Trains its own small word-level model with manual gradients, then samples it with and without a keyed logit bias and detects the bias with a model-free z-test; it needs only softmax sampling (microbeam) and imports nothing from other scripts. |
 | **Phase 11** | `microcot.py`                                                      | Trains its own position-slot model twice (direct and trace) with manual gradients, then compares greedy and self-consistency decoding; it needs autoregressive sampling (microgpt, microbeam) and the idea of supervised targets (microsft) and imports nothing from other scripts. |
+| **Phase 12** | `microerrorbars.py`                                                | Simulates seeded evals and trains two small logistic-regression arms with hand-written gradients, then reports interval coverage, paired versus unpaired error bars and required sample sizes; it needs only the idea of a training loop (microoptimizer) and imports nothing from other scripts. |
 
 ### Dependency Notes
 

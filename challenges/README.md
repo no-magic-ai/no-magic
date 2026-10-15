@@ -15,6 +15,7 @@ Each challenge presents a code snippet or scenario drawn directly from one of th
 | [distill.md](distill.md)       | `02-alignment/microdistill.py`     | Temperature softening, T² gradient scaling, mixed-objective optimum, batch-mean 1/B under SGD |
 | [dpo.md](dpo.md)               | `02-alignment/microdpo.py`         | Beta parameter, identical completions, reference divergence                |
 | [embedding.md](embedding.md)   | `01-foundations/microembedding.py` | Temperature, false negatives, augmentation, representation collapse        |
+| [errorbars.md](errorbars.md)   | `01-foundations/microerrorbars.py` | CLT zero-width collapse and Wilson, coverage noise, paired versus unpaired standard errors, minimum detectable effect and required n |
 | [gan.md](gan.md)               | `01-foundations/microgan.py`       | Gradient saturation, mode collapse, training balance                       |
 | [gpt.md](gpt.md)               | `01-foundations/microgpt.py`       | Context window, head dimensions, learning rate, KV cache                   |
 | [kv.md](kv.md)                 | `03-systems/microkv.py`            | Multiply count scaling, cache memory formula, paged attention              |

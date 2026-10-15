@@ -1,10 +1,10 @@
 # Foundations
 
-Core algorithms that form the building blocks of modern AI systems. These are the primitives — if you understand these, everything else is composition.
+Core algorithms that form the building blocks of modern AI systems, plus the evaluation statistics used to report how well they work. These are the primitives — if you understand these, everything else is composition.
 
 ## Scripts
 
-Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 16 programs in this tier: 14 `micro*` programs and the unprefixed comparisons `attention_vs_none.py` and `rnn_vs_gru_vs_lstm.py`.
+Time and Status are historical values recorded when each script was added (Apple M-series, Python 3.12, wall-clock). They were not re-measured for this inventory and do not certify current runtime, correctness or media, except the `microerrorbars.py` row, whose measurement is described below the table; rows marked _unmeasured_ have no recorded timing. Each script's teaching kind is recorded in [`docs/catalog.json`](../docs/catalog.json). The table lists all 17 programs in this tier: 15 `micro*` programs and the unprefixed comparisons `attention_vs_none.py` and `rnn_vs_gru_vs_lstm.py`.
 
 | Script              | Algorithm                                                                 | Time    | Status | Video                                             |
 | ------------------- | ------------------------------------------------------------------------- | ------- | ------ | ------------------------------------------------- |
@@ -13,6 +13,7 @@ Time and Status are historical values recorded when each script was added (Apple
 | `microconv.py`      | Convolutional Neural Network — kernels, pooling, and feature maps         | 0m 31s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microconv.gif)      |
 | `microdiffusion.py` | Denoising diffusion on 2D point clouds                                    | 0m 41s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microdiffusion.gif) |
 | `microembedding.py` | Contrastive embedding learning (InfoNCE)                                  | 0m 44s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microembedding.gif) |
+| `microerrorbars.py` | Error bars for evals: coverage of CLT, bootstrap and Wilson 95% intervals, paired vs. unpaired comparison of two trained logistic-regression arms, minimum detectable effect and required n | 1m 43s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microerrorbars.gif) |
 | `microgan.py`       | Generative Adversarial Network — generator vs. discriminator minimax game | 2m 02s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microgan.gif)       |
 | `microgpt.py`       | Autoregressive language model (GPT) with scalar autograd                  | 1m 41s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microgpt.gif)       |
 | `microlstm.py`      | LSTM recurrent cell with input, forget and output gates and a candidate cell update, trained on character-level names | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microlstm.gif)      |
@@ -24,6 +25,8 @@ Time and Status are historical values recorded when each script was added (Apple
 | `microvae.py`       | Variational Autoencoder with reparameterization trick                     | 1m 31s  | Pass   | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microvae.gif)       |
 | `microvit.py`       | Vision Transformer — image patches as tokens, classifying synthetic images | _unmeasured_ | not recorded | ![Preview](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microvit.gif)       |
 | `rnn_vs_gru_vs_lstm.py` | Vanilla RNN vs. GRU vs. LSTM on a long-range name task (trained comparison) | _unmeasured_ | not recorded | no preview |
+
+The `microerrorbars.py` row was measured on Apple M1 Pro with CPython 3.12.8: the two default runs took 101.9 s and 103.6 s (1m 43s in the benchmark runner) and printed identical output apart from timing lines. Its Pass means the program's three gates (G1 training, G2 arithmetic, G3 completeness) passed at seed 42; the gates check the code's correctness, never effect sizes. Everything it simulates is a toy: binary scores with one answer per question, synthetic features and one seed, not a measurement of any real LLM eval. The coverage study and the Wilson reference are this program's extension of the linked paper card, which does not claim that CLT intervals under-cover at small n. Legacy Intel was not measured.
 
 ## Future Candidates
 
@@ -49,4 +52,5 @@ microoptimizer.py   → How optimizer choice shapes convergence
 microgan.py         → How two networks learn by competing
 microdiffusion.py   → How data emerges from noise
 microvae.py         → How to learn compressed generative representations
+microerrorbars.py   → How an eval score gets an error bar, and how many questions an effect needs
 ```
