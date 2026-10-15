@@ -1,6 +1,6 @@
 # Learning Path
 
-A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 41 of the 53 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+A structured guide through the no-magic implementations. Pick a track based on your interest, check off scripts as you complete them, and build intuition for how modern AI/ML systems work under the hood. The tracks currently place 42 of the 54 scripts in [`docs/catalog.json`](docs/catalog.json); the other 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ## How to Use This Guide
 
@@ -20,7 +20,7 @@ A structured guide through the no-magic implementations. Pick a track based on y
 | 3. Deep Dive: Modern Inference | Making models fast and small | ~9 hrs 45 min |
 | 4. Deep Dive: Generative Models | How models create new data | ~4 hrs |
 | 5. Deep Dive: Retrieval & Search | Connecting models to external knowledge | ~3 hrs |
-| 6. Full Curriculum | 41 of the 53 scripts, dependency-ordered | ~29 hrs 20 min |
+| 6. Full Curriculum | 42 of the 54 scripts, dependency-ordered | ~30 hrs 20 min |
 | 7. Agent Algorithms | Search and reasoning in autonomous agents | ~3 hrs |
 
 ---
@@ -541,9 +541,9 @@ Connecting models to external knowledge. This track covers how to represent text
 
 ## Track 6: Full Curriculum (~22 hrs)
 
-The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 29 hrs 20 min.
+The estimate in this heading is kept unchanged so existing links to it keep working; the current exercises below total 30 hrs 20 min.
 
-41 of the 53 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
+42 of the 54 catalog scripts in dependency-respecting order, grouped by conceptual cluster with milestone markers. The remaining 12 are listed under [Scripts not yet in a track](#scripts-not-yet-in-a-track).
 
 ### Milestone 1: Text Representation (1.5 hrs)
 
@@ -687,6 +687,29 @@ How agents search and reason — tree search for planning and tool-augmented rea
 |---|--------|------|----------|
 | 40 | `04-agents/micromcts.py` | 90 min | - [ ] |
 | 41 | `04-agents/microreact.py` | 90 min | - [ ] |
+
+### Milestone 15: Reporting Results (1 hr)
+
+How to put an error bar on an eval score, compare two models fairly and plan how many questions a result needs. It comes last because it applies to the model comparisons of every earlier milestone.
+
+| # | Script | Time | Checkbox |
+|---|--------|------|----------|
+| 42 | `01-foundations/microerrorbars.py` | 60 min | - [ ] |
+
+**42. `01-foundations/microerrorbars.py`**
+- **You'll learn:** How an eval score becomes a number with a stated uncertainty. You simulate evals with a known truth and count how often 95% intervals from the CLT, a percentile bootstrap and the Wilson score method contain it; train two logistic-regression arms (8 and 7 of 8 synthetic Gaussian features) and compare unpaired and paired error bars for their difference on the same questions; and turn the paired variance into a minimum detectable effect and a required number of questions.
+- **Builds on:** `microoptimizer` (gradient descent on a log-loss, used here for two small logistic regressions). Its Wilson interval is the same formula as in `microcot` and `microwatermark`, which a reader may meet first.
+- **Run:** `python 01-foundations/microerrorbars.py` (the longest part by far is Part A's bootstrap; the program prints `[timing]` lines for each part)
+- **Data:** None to download; scores and the synthetic classification pool are generated in the script.
+- **Links:** [source](01-foundations/microerrorbars.py) · [paper card](https://github.com/no-magic-ai/no-magic-papers/blob/main/papers/adding-error-bars-to-evals.md) · [primary paper](https://arxiv.org/abs/2411.00640) · [preview GIF](https://raw.githubusercontent.com/no-magic-ai/no-magic-viz/main/previews/microerrorbars.gif)
+- **Predict before you run:** (1) For true mean 0.95 and n = 100 questions, which of the CLT, bootstrap and Wilson 95% intervals covers the truth closest to 95% of the time, and what share of the CLT intervals have exactly zero width? (2) The pool has Var(s_A) = 0.0951, Var(s_B) = 0.1327 and Cov = 0.0509 for the two arms' per-question scores. What is Var(s_A − s_B), and does the paired interval come out narrower or wider than the unpaired one?
+  <details><summary>Check your prediction</summary>
+
+  (1) Wilson, with coverage 0.953 against 0.938 for the bootstrap and 0.863 for the CLT interval (1,000 simulated evals per cell, seed 42); 0.012 of the CLT intervals have zero width, because all 100 scores were equal, while the Wilson interval never does. (2) 0.0951 + 0.1327 − 2 × 0.0509 = 0.1260, the printed pool variance of the paired differences, against the unpaired variance of 0.2278; the paired interval is narrower, with a paired/unpaired width ratio of 0.738 at n = 100 (width 0.1374 against 0.1863). The arms' scores correlate at 0.4530, so subtracting twice the covariance removes shared question difficulty.
+  </details>
+- **Limits:** A toy simulation, not a measurement of any real LLM eval: Part A uses binary scores with one answer per question, Part B's models are small logistic regressions on synthetic features, every number comes from one seed, and questions are independent (the clustered standard errors of Miller §2.2 are out of scope). The coverage study and the Wilson reference are this program's extension of the paper card: Miller does not claim CLT intervals under-cover at small n, and calls the CLT appropriate for evals with a large number of questions. The paired interval's coverage is below the nominal 0.95 at n = 30 (0.919), and the unpaired minimum-detectable-effect and required-n rows extend Miller's Eq. 10, whose Eq. 9 assumes a paired analysis.
+- **Time:** 60 min
+- [ ] Completed
 
 ---
 

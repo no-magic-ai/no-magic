@@ -78,6 +78,7 @@ DISPLAY_OVERRIDES: dict[str, str] = {
     "microvectorsearch": "Vector Search",
     "microwatermark": "Green-List Watermarking",
     "microcot": "Reasoning Traces and Self-Consistency",
+    "microerrorbars": "Error Bars for Evals",
     "microbandit": "Multi-Armed Bandit",
     "micromcts": "Monte Carlo Tree Search",
     "micromemory": "Memory-Augmented Network",
@@ -111,6 +112,7 @@ SCRIPT_TO_PAPER: dict[str, str] = {
     "microdpo": "dpo",
     "microdropout": "dropout",
     "microembedding": "word2vec",
+    "microerrorbars": "adding-error-bars-to-evals",
     "microflash": "flash-attention",
     "microgan": "gan",
     "microgpt": "gpt-1",
@@ -297,6 +299,15 @@ SCRIPT_CONTRACTS: dict[str, TeachingContract] = {
         "linear layer trained with an InfoNCE contrastive loss; the source says it is "
         "inspired by SimCLR and sentence-transformers. It does not implement the CBOW "
         "or skip-gram word models of the linked word2vec card.",
+    ),
+    "microerrorbars": TeachingContract(
+        "comparison",
+        "in_script",
+        "Trains two logistic-regression arms (8 and 7 of 8 synthetic Gaussian features) and "
+        "simulates seeded evals. The coverage study of CLT, bootstrap and Wilson intervals and "
+        "the Wilson reference extend the card; the unpaired minimum-detectable-effect and "
+        "required-n rows extend Eq. 10. Toy synthetic arms, not real LLM evals; one seed, no "
+        "clustered standard errors.",
     ),
     "microflash": TeachingContract("forward_pass", "in_script"),
     "microgan": TeachingContract("train_infer", "in_script"),
